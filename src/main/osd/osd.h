@@ -196,6 +196,9 @@ typedef enum {
     OSD_CUSTOM_MSG3,
     OSD_LIDAR_DIST,
     OSD_CUSTOM_SERIAL_TEXT,
+#ifdef USE_WING_LAUNCH
+    OSD_WING_LAUNCH_STATUS,
+#endif
     OSD_ITEM_COUNT // MUST BE LAST
 } osd_items_e;
 

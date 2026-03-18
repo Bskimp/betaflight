@@ -129,6 +129,7 @@ typedef enum {
     DEBUG_CHIRP,
     DEBUG_FLASH_TEST_PRBS,
     DEBUG_MAVLINK_TELEMETRY,
+    DEBUG_WING_LAUNCH,
     DEBUG_COUNT
 } debugType_e;
 

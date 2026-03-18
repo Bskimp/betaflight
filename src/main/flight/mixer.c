@@ -54,6 +54,7 @@
 #include "flight/mixer_tricopter.h"
 #include "flight/pid.h"
 #include "flight/rpm_filter.h"
+#include "flight/wing_launch.h"
 
 #include "io/gps.h"
 
@@ -802,6 +803,12 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     // Once the pilot triggers the launch throttle control will be reactivated.
     if (launchControlActive) {
         throttle = 0.0f;
+    }
+#endif
+
+#ifdef USE_WING_LAUNCH
+    if (isWingLaunchInProgress() && wingLaunchGetThrottle() >= 0.0f) {
+        throttle = wingLaunchGetThrottle();
     }
 #endif
 

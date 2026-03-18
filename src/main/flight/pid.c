@@ -50,6 +50,7 @@
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/rpm_filter.h"
+#include "flight/wing_launch.h"
 
 #include "io/gps.h"
 
@@ -259,6 +260,17 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .tpa_speed_pitch_offset = 0,
         .yaw_type = YAW_TYPE_RUDDER,
         .angle_pitch_offset = 0,
+#ifdef USE_WING_LAUNCH
+        .wing_launch_accel_thresh = 25,
+        .wing_launch_motor_delay = 100,
+        .wing_launch_motor_ramp = 500,
+        .wing_launch_throttle = 75,
+        .wing_launch_climb_time = 3000,
+        .wing_launch_climb_angle = 45,
+        .wing_launch_transition = 1000,
+        .wing_launch_max_tilt = 45,
+        .wing_launch_idle_thr = 0,
+#endif // USE_WING_LAUNCH
         .chirp_lag_freq_hz = 3,
         .chirp_lead_freq_hz = 30,
         .chirp_amplitude_roll = 230,
@@ -573,6 +585,18 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
         angleTarget += (float)pidProfile->angle_pitch_offset / 10.0f;
     }
 #endif // USE_WING
+
+#ifdef USE_WING_LAUNCH
+    if (isWingLaunchInProgress()) {
+        angleFeedforward = 0.0f;
+        if (axis == FD_PITCH) {
+            angleTarget = wingLaunchGetPitchAngle();
+        } else {
+            angleTarget = 0.0f; // wings level on roll
+        }
+        angleLimit = 85.0f;
+    }
+#endif // USE_WING_LAUNCH
 
 #ifdef USE_GPS_RESCUE
     angleTarget += gpsRescueAngle[axis] / 100.0f; // Angle is in centidegrees, stepped on roll at 10Hz but not on pitch
@@ -1135,6 +1159,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 #endif
 #ifdef USE_POSITION_HOLD
                 || FLIGHT_MODE(POS_HOLD_MODE)
+#endif
+#ifdef USE_WING_LAUNCH
+                || isWingLaunchInProgress()
 #endif
                 ;
     levelMode_e levelMode;
