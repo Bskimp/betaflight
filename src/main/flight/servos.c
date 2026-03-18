@@ -548,8 +548,8 @@ static void servoTable(void)
     // pre-deflect elevons when AUTOLAUNCH switch is on but disarmed
     if (!ARMING_FLAG(ARMED) && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH)) {
         const int16_t pitchOffset = (int16_t)(wingLaunchGetPitchAngle() * 5.0f);
-        servo[SERVO_FLAPPERON_1] += pitchOffset;
-        servo[SERVO_FLAPPERON_2] += pitchOffset;
+        servo[SERVO_FLAPPERON_1] -= pitchOffset;
+        servo[SERVO_FLAPPERON_2] -= pitchOffset;
     }
 #endif
 
