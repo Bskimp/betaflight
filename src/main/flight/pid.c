@@ -587,7 +587,7 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
 #endif // USE_WING
 
 #ifdef USE_WING_LAUNCH
-    if (isWingLaunchInProgress() || wingLaunchGetPitchAngle() != 0.0f) {
+    if (isWingLaunchInProgress()) {
         angleFeedforward = 0.0f;
         if (axis == FD_PITCH) {
             angleTarget = wingLaunchGetPitchAngle();

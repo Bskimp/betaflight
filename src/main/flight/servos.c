@@ -46,6 +46,9 @@
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
+#ifdef USE_WING_LAUNCH
+#include "flight/wing_launch.h"
+#endif
 
 #include "io/gimbal.h"
 
@@ -540,6 +543,15 @@ static void servoTable(void)
             }
         }
     }
+
+#ifdef USE_WING_LAUNCH
+    // pre-deflect elevons when AUTOLAUNCH switch is on but disarmed
+    if (!ARMING_FLAG(ARMED) && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH)) {
+        const int16_t pitchOffset = (int16_t)(wingLaunchGetPitchAngle() * 5.0f);
+        servo[SERVO_FLAPPERON_1] += pitchOffset;
+        servo[SERVO_FLAPPERON_2] += pitchOffset;
+    }
+#endif
 
     // constrain servos
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {

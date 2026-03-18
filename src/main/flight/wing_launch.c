@@ -209,7 +209,6 @@ float wingLaunchGetThrottle(void)
 float wingLaunchGetPitchAngle(void)
 {
     if (launchState == WING_LAUNCH_IDLE && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH)) {
-        // pre-deflect elevator before arming so pilot can see it's ready
         return climbAngleDeg;
     }
     if (launchState == WING_LAUNCH_TRANSITION) {

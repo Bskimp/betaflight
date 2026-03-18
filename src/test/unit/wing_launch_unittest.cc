@@ -123,11 +123,11 @@ TEST(WingLaunchTest, InitialStateIsIdle)
 TEST(WingLaunchTest, PitchPreDeflectsWhenSwitchOn)
 {
     resetTestState();
-    // AUTOLAUNCH switch is on, not armed — should pre-deflect elevator
+    // AUTOLAUNCH switch on + IDLE = pre-deflect for servo path
     EXPECT_FLOAT_EQ(wingLaunchGetPitchAngle(), 45.0f);
 }
 
-TEST(WingLaunchTest, NoPitchDeflectWhenSwitchOff)
+TEST(WingLaunchTest, NoPitchWhenSwitchOff)
 {
     resetTestState();
     mockLaunchSwitchActive = false;
