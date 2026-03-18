@@ -32,8 +32,6 @@ extern "C" {
     #include "flight/imu.h"
     #include "flight/pid.h"
     #include "flight/wing_launch.h"
-
-    #include "sensors/acceleration.h"
 }
 
 #include "unittest_macros.h"
@@ -42,7 +40,6 @@ extern "C" {
 // Mock state
 static uint32_t mockTimeUs = 0;
 static bool mockLaunchSwitchActive = true;
-static bool mockArmed = true;
 
 extern "C" {
     uint8_t armingFlags = 0;
@@ -51,7 +48,6 @@ extern "C" {
     uint16_t flightModeFlags = 0;
     uint8_t stateFlags = 0;
 
-    acc_t acc;
     attitudeEulerAngles_t attitude;
 
     bool IS_RC_MODE_ACTIVE(boxId_e boxId) {
@@ -71,11 +67,10 @@ static void resetTestState(void)
 {
     mockTimeUs = 1000000; // start at 1 second
     mockLaunchSwitchActive = true;
-    mockArmed = true;
-    armingFlags = 0x01; // ARMED = (1 << 0)
+    armingFlags = 0; // start DISARMED
 
     memset(&testProfile, 0, sizeof(testProfile));
-    testProfile.wing_launch_accel_thresh = 25;   // 2.5G
+    testProfile.wing_launch_accel_thresh = 25;   // unused now but keep in profile
     testProfile.wing_launch_motor_delay = 100;
     testProfile.wing_launch_motor_ramp = 500;
     testProfile.wing_launch_throttle = 75;
@@ -85,8 +80,6 @@ static void resetTestState(void)
     testProfile.wing_launch_max_tilt = 45;
     testProfile.wing_launch_idle_thr = 0;
 
-    memset(&acc, 0, sizeof(acc));
-    acc.accMagnitude = 1.0f; // 1G at rest
     memset(&attitude, 0, sizeof(attitude));
 
     wingLaunchInit(&testProfile);
@@ -95,6 +88,25 @@ static void resetTestState(void)
 static void advanceTimeMs(uint32_t ms)
 {
     mockTimeUs += ms * 1000;
+}
+
+// simulate arming — sets ARMED flag and runs one update so the state machine sees the edge
+static void simulateArm(void)
+{
+    armingFlags = 0x01; // ARMED = (1 << 0)
+    wingLaunchUpdate(mockTimeUs);
+    advanceTimeMs(1);
+}
+
+// helper: arm and advance through to CLIMBING state
+static void advanceToClimbing(void)
+{
+    simulateArm();
+    // now in MOTOR_DELAY — wait through it
+    advanceTimeMs(100);
+    wingLaunchUpdate(mockTimeUs); // → MOTOR_RAMP
+    advanceTimeMs(500);
+    wingLaunchUpdate(mockTimeUs); // → CLIMBING
 }
 
 // --- Tests ---
@@ -108,84 +120,48 @@ TEST(WingLaunchTest, InitialStateIsIdle)
     EXPECT_FLOAT_EQ(wingLaunchGetThrottle(), 0.0f);
 }
 
-TEST(WingLaunchTest, NoDetectionBelowThreshold)
+TEST(WingLaunchTest, PitchPreDeflectsWhenSwitchOn)
 {
     resetTestState();
-    acc.accMagnitude = 2.0f; // below 2.5G threshold
-
-    for (int i = 0; i < 10; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_IDLE);
+    // AUTOLAUNCH switch is on, not armed — should pre-deflect elevator
+    EXPECT_FLOAT_EQ(wingLaunchGetPitchAngle(), 45.0f);
 }
 
-TEST(WingLaunchTest, DetectsThrowAboveThreshold)
+TEST(WingLaunchTest, NoPitchDeflectWhenSwitchOff)
 {
     resetTestState();
-    acc.accMagnitude = 3.0f; // above 2.5G threshold
-
-    // needs 3 consecutive samples
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_IDLE);
-
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_IDLE);
-
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-    // after 3 samples should be DETECTED
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
+    mockLaunchSwitchActive = false;
+    EXPECT_FLOAT_EQ(wingLaunchGetPitchAngle(), 0.0f);
 }
 
-TEST(WingLaunchTest, DetectionResetsOnDropBelowThreshold)
+TEST(WingLaunchTest, ArmTriggersLaunchSequence)
 {
     resetTestState();
-
-    // 2 samples above threshold
-    acc.accMagnitude = 3.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-
-    // drop below threshold — should reset counter
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-
-    // back above threshold — needs 3 fresh samples
-    acc.accMagnitude = 3.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_IDLE);
 
+    simulateArm();
+    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_DELAY);
+}
+
+TEST(WingLaunchTest, NoTriggerWithoutSwitch)
+{
+    resetTestState();
+    mockLaunchSwitchActive = false;
+
+    armingFlags = 0x01;
     wingLaunchUpdate(mockTimeUs);
     advanceTimeMs(1);
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
+
+    // switch is off so update returns early — state stays IDLE
+    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_IDLE);
 }
 
 TEST(WingLaunchTest, FullStateSequence)
 {
     resetTestState();
 
-    // trigger detection
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
-    acc.accMagnitude = 1.0f; // settle after throw
-
-    // DETECTED → MOTOR_DELAY (immediate transition)
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(1);
+    // arm triggers MOTOR_DELAY
+    simulateArm();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_DELAY);
 
     // wait through motor delay (100ms)
@@ -217,16 +193,9 @@ TEST(WingLaunchTest, MotorRampIsLinear)
 {
     resetTestState();
 
-    // trigger detection and get to MOTOR_RAMP
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs); // DETECTED → MOTOR_DELAY
+    simulateArm();
     advanceTimeMs(100);
-    wingLaunchUpdate(mockTimeUs); // MOTOR_DELAY → MOTOR_RAMP
+    wingLaunchUpdate(mockTimeUs); // → MOTOR_RAMP
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_RAMP);
 
     // at 50% through ramp (250ms of 500ms)
@@ -245,18 +214,7 @@ TEST(WingLaunchTest, PitchAngleDuringLaunch)
 {
     resetTestState();
 
-    // trigger and get to CLIMBING
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(100);
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(500);
-    wingLaunchUpdate(mockTimeUs);
+    advanceToClimbing();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_CLIMBING);
     EXPECT_FLOAT_EQ(wingLaunchGetPitchAngle(), 45.0f);
 
@@ -274,18 +232,7 @@ TEST(WingLaunchTest, AbortOnExcessiveRoll)
 {
     resetTestState();
 
-    // trigger and get to CLIMBING
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(100);
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(500);
-    wingLaunchUpdate(mockTimeUs);
+    advanceToClimbing();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_CLIMBING);
 
     // exceed max tilt (45 degrees = 450 decidegrees)
@@ -302,18 +249,7 @@ TEST(WingLaunchTest, AbortOnSwitchOff)
 {
     resetTestState();
 
-    // trigger and get to CLIMBING
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(100);
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(500);
-    wingLaunchUpdate(mockTimeUs);
+    advanceToClimbing();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_CLIMBING);
 
     // turn off launch switch
@@ -327,12 +263,7 @@ TEST(WingLaunchTest, ResetOnDisarm)
 {
     resetTestState();
 
-    // trigger detection
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
+    simulateArm();
     EXPECT_NE(wingLaunchGetState(), WING_LAUNCH_IDLE);
 
     // disarm
@@ -345,14 +276,9 @@ TEST(WingLaunchTest, ResetOnDisarm)
 TEST(WingLaunchTest, ThrottleNegativeWhenComplete)
 {
     resetTestState();
-    // force to complete state by running full sequence
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs);
+
+    // run full sequence
+    simulateArm();
     advanceTimeMs(100);
     wingLaunchUpdate(mockTimeUs);
     advanceTimeMs(500);
@@ -365,35 +291,11 @@ TEST(WingLaunchTest, ThrottleNegativeWhenComplete)
     EXPECT_LT(wingLaunchGetThrottle(), 0.0f); // negative = no override
 }
 
-TEST(WingLaunchTest, MidFlightActivationBlocked)
-{
-    resetTestState();
-
-    // advance past the 3-second launch window
-    advanceTimeMs(4000);
-
-    // try to detect a throw — should auto-complete instead
-    acc.accMagnitude = 3.0f;
-    wingLaunchUpdate(mockTimeUs);
-    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_COMPLETE);
-}
-
 TEST(WingLaunchTest, AbortOnPitchDive)
 {
     resetTestState();
 
-    // trigger and get to CLIMBING
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(100);
-    wingLaunchUpdate(mockTimeUs);
-    advanceTimeMs(500);
-    wingLaunchUpdate(mockTimeUs);
+    advanceToClimbing();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_CLIMBING);
 
     // pitch nose-down past max tilt (45 degrees = 450 decidegrees)
@@ -410,16 +312,9 @@ TEST(WingLaunchTest, AbortOnRollDuringMotorRamp)
 {
     resetTestState();
 
-    // trigger and get to MOTOR_RAMP
-    acc.accMagnitude = 3.0f;
-    for (int i = 0; i < 3; i++) {
-        wingLaunchUpdate(mockTimeUs);
-        advanceTimeMs(1);
-    }
-    acc.accMagnitude = 1.0f;
-    wingLaunchUpdate(mockTimeUs); // DETECTED → MOTOR_DELAY
+    simulateArm();
     advanceTimeMs(100);
-    wingLaunchUpdate(mockTimeUs); // MOTOR_DELAY → MOTOR_RAMP
+    wingLaunchUpdate(mockTimeUs); // → MOTOR_RAMP
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_RAMP);
 
     // exceed max tilt during ramp

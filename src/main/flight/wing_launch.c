@@ -38,17 +38,13 @@
 #include "flight/pid.h"
 #include "flight/wing_launch.h"
 
-#include "sensors/acceleration.h"
-
 static wingLaunchState_e launchState = WING_LAUNCH_IDLE;
 static timeUs_t stateStartTimeUs = 0;
-static timeUs_t launchInitTimeUs = 0;
-static uint8_t detectCount = 0;
+static bool wasArmed = false;
 static float motorOutput = 0.0f;
 static float transitionFactor = 0.0f;
 
 // config cache (populated from pidProfile in wingLaunchInit)
-static float accelThresholdG = 2.5f;
 static uint16_t motorDelayMs = 100;
 static uint16_t motorRampMs = 500;
 static float launchThrottle = 0.75f;
@@ -57,9 +53,6 @@ static float climbAngleDeg = 45.0f;
 static uint16_t transitionMs = 1000;
 static float maxTiltDeg = 45.0f;
 static float idleThrottle = 0.0f;
-
-#define LAUNCH_DETECT_REQUIRED_SAMPLES 3
-#define LAUNCH_WINDOW_MS 3000
 
 static void transitionToState(wingLaunchState_e newState, timeUs_t currentTimeUs)
 {
@@ -74,7 +67,6 @@ static timeDelta_t stateElapsedMs(timeUs_t currentTimeUs)
 
 void wingLaunchInit(const pidProfile_t *pidProfile)
 {
-    accelThresholdG = pidProfile->wing_launch_accel_thresh / 10.0f;
     motorDelayMs = pidProfile->wing_launch_motor_delay;
     motorRampMs = pidProfile->wing_launch_motor_ramp;
     launchThrottle = pidProfile->wing_launch_throttle / 100.0f;
@@ -85,9 +77,8 @@ void wingLaunchInit(const pidProfile_t *pidProfile)
     idleThrottle = pidProfile->wing_launch_idle_thr / 100.0f;
 
     launchState = WING_LAUNCH_IDLE;
-    launchInitTimeUs = micros();
     stateStartTimeUs = 0;
-    detectCount = 0;
+    wasArmed = false;
     motorOutput = idleThrottle;
     transitionFactor = 0.0f;
 }
@@ -110,25 +101,11 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
 
     switch (launchState) {
     case WING_LAUNCH_IDLE:
-        // block throw detection if launch window has expired
-        if (cmpTimeUs(currentTimeUs, launchInitTimeUs) / 1000 > LAUNCH_WINDOW_MS) {
-            transitionToState(WING_LAUNCH_COMPLETE, currentTimeUs);
-            break;
+        // arm-trigger: transition to motor delay on rising edge of ARMED
+        if (ARMING_FLAG(ARMED) && !wasArmed) {
+            transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
         }
-        // monitor accelerometer for throw
-        if (acc.accMagnitude > accelThresholdG) {
-            detectCount++;
-            if (detectCount >= LAUNCH_DETECT_REQUIRED_SAMPLES) {
-                transitionToState(WING_LAUNCH_DETECTED, currentTimeUs);
-            }
-        } else {
-            detectCount = 0;
-        }
-        break;
-
-    case WING_LAUNCH_DETECTED:
-        // immediate transition to motor delay
-        transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
+        wasArmed = ARMING_FLAG(ARMED);
         break;
 
     case WING_LAUNCH_MOTOR_DELAY:
@@ -191,7 +168,7 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
     }
 
     DEBUG_SET(DEBUG_WING_LAUNCH, 0, launchState);
-    DEBUG_SET(DEBUG_WING_LAUNCH, 1, lrintf(acc.accMagnitude * 100));
+    DEBUG_SET(DEBUG_WING_LAUNCH, 1, stateElapsedMs(currentTimeUs));
     DEBUG_SET(DEBUG_WING_LAUNCH, 2, lrintf(motorOutput * 1000));
     DEBUG_SET(DEBUG_WING_LAUNCH, 3, lrintf(transitionFactor * 1000));
 }
@@ -199,7 +176,7 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
 void wingLaunchReset(void)
 {
     launchState = WING_LAUNCH_IDLE;
-    detectCount = 0;
+    wasArmed = false;
     motorOutput = idleThrottle;
     transitionFactor = 0.0f;
 }
@@ -218,7 +195,6 @@ float wingLaunchGetThrottle(void)
 {
     switch (launchState) {
     case WING_LAUNCH_IDLE:
-    case WING_LAUNCH_DETECTED:
     case WING_LAUNCH_MOTOR_DELAY:
         return idleThrottle;
     case WING_LAUNCH_MOTOR_RAMP:
@@ -232,13 +208,17 @@ float wingLaunchGetThrottle(void)
 
 float wingLaunchGetPitchAngle(void)
 {
-    if (!isWingLaunchInProgress()) {
-        return 0.0f;
+    if (launchState == WING_LAUNCH_IDLE && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH)) {
+        // pre-deflect elevator before arming so pilot can see it's ready
+        return climbAngleDeg;
     }
     if (launchState == WING_LAUNCH_TRANSITION) {
         return climbAngleDeg * (1.0f - transitionFactor);
     }
-    return climbAngleDeg;
+    if (isWingLaunchInProgress()) {
+        return climbAngleDeg;
+    }
+    return 0.0f;
 }
 
 wingLaunchState_e wingLaunchGetState(void)

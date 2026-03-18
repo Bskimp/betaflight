@@ -511,8 +511,7 @@ wing_launch_unittest_SRC := \
 
 wing_launch_unittest_DEFINES := \
 		USE_WING= \
-		USE_WING_LAUNCH= \
-		USE_ACC=
+		USE_WING_LAUNCH=
 
 # Please tweak the following variable definitions as needed by your
 # project, except GTEST_HEADERS, which you can use in your own targets
