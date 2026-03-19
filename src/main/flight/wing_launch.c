@@ -151,8 +151,7 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
             transitionToState(WING_LAUNCH_COMPLETE, currentTimeUs);
         } else {
             transitionFactor = (float)elapsedMs / (float)transitionMs;
-            // blend throttle from launch toward idle (pilot takes over)
-            motorOutput = launchThrottle * (1.0f - transitionFactor);
+            motorOutput = launchThrottle; // mixer blends toward pilot stick
         }
         break;
     }
@@ -218,6 +217,11 @@ float wingLaunchGetPitchAngle(void)
         return climbAngleDeg;
     }
     return 0.0f;
+}
+
+float wingLaunchGetTransitionFactor(void)
+{
+    return transitionFactor;
 }
 
 wingLaunchState_e wingLaunchGetState(void)

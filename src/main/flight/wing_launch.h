@@ -44,6 +44,7 @@ bool isWingLaunchInProgress(void);
 
 float wingLaunchGetThrottle(void);
 float wingLaunchGetPitchAngle(void);
+float wingLaunchGetTransitionFactor(void);
 wingLaunchState_e wingLaunchGetState(void);
 
 #endif // USE_WING_LAUNCH

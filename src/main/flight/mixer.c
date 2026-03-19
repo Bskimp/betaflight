@@ -808,7 +808,10 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
 
 #ifdef USE_WING_LAUNCH
     if (isWingLaunchInProgress() && wingLaunchGetThrottle() >= 0.0f) {
-        throttle = wingLaunchGetThrottle();
+        const float launchThrottle = wingLaunchGetThrottle();
+        const float blend = wingLaunchGetTransitionFactor();
+        // blend from launch throttle toward pilot stick during transition
+        throttle = launchThrottle + (throttle - launchThrottle) * blend;
     }
 #endif
 
