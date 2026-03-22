@@ -91,7 +91,9 @@
 #define PARAM_NAME_WING_LAUNCH_STICK_OVERRIDE "wing_launch_stick_override"
 #ifdef USE_VTOL
 #define PARAM_NAME_MIXER_PROFILE_COUNT "mixer_profile_count"
-#define PARAM_NAME_VTOL_PLATFORM_TYPE "vtol_platform_type"
+#define PARAM_NAME_MIXER_TRANSITION_TIME "mixer_transition_time"
+#define PARAM_NAME_FAILSAFE_MIXER_PROFILE "failsafe_mixer_profile"
+#define PARAM_NAME_FAILSAFE_MIXER_ACTION "failsafe_mixer_action"
 #endif
 #define PARAM_NAME_SPA_ROLL_CENTER "spa_roll_center"
 #define PARAM_NAME_SPA_ROLL_WIDTH "spa_roll_width"

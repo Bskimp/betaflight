@@ -33,6 +33,17 @@ typedef enum {
     PLATFORM_TYPE_COUNT
 } platformType_e;
 
+typedef enum {
+    FAILSAFE_MIXER_SWITCH_IMMEDIATE = 0,
+    FAILSAFE_MIXER_HOLD_CURRENT,
+    FAILSAFE_MIXER_ACTION_COUNT
+} failsafeMixerAction_e;
+
+typedef enum {
+    MIXER_TRANSITION_IDLE = 0,
+    MIXER_TRANSITION_BLENDING,
+} mixerTransitionState_e;
+
 typedef struct mixerProfile_s {
     uint8_t mixerMode;              // mixerMode_e
     uint8_t platformType;           // platformType_e
@@ -46,5 +57,12 @@ void mixerProfileInit(void);
 bool mixerProfileSelect(uint8_t index);
 uint8_t mixerProfileGetActiveIndex(void);
 void mixerProfileGetSuperset(uint8_t *maxMotors, uint8_t *maxServos);
+
+// transition state machine (PR2)
+void mixerProfileUpdateFromRcModes(void);
+void mixerProfileTransitionUpdate(uint32_t currentTimeMs);
+bool mixerProfileTransitionInProgress(void);
+float mixerProfileTransitionProgress(void);
+void mixerProfileOnFailsafe(void);
 
 #endif // USE_VTOL

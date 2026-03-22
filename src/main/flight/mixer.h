@@ -107,6 +107,11 @@ typedef struct mixerConfig_s {
 #endif
 #ifdef USE_VTOL
     uint8_t mixer_profile_count;    // 1 = dormant (default), 2 = VTOL active
+    uint16_t mixer_transition_time; // blend duration in ms (default 1500)
+    uint8_t mixer_linked_pid_profile[2];  // per-profile: 0 = no link, 1-based index
+    uint8_t mixer_linked_rate_profile[2]; // per-profile: 0 = no link, 1-based index
+    uint8_t failsafe_mixer_profile; // target profile on failsafe (0 or 1)
+    uint8_t failsafe_mixer_action;  // failsafeMixerAction_e
 #endif
 } mixerConfig_t;
 

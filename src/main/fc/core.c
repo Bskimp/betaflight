@@ -71,6 +71,7 @@
 
 #include "flight/imu.h"
 #include "flight/mixer.h"
+#include "flight/mixer_profile.h"
 #include "flight/pid.h"
 #include "flight/position.h"
 #include "flight/rpm_filter.h"
@@ -1031,6 +1032,11 @@ void processRxModes(timeUs_t currentTimeUs)
     }
 
     updateActivatedModes();
+
+#ifdef USE_VTOL
+    mixerProfileUpdateFromRcModes();
+    mixerProfileTransitionUpdate(millis());
+#endif
 
 #ifdef USE_DSHOT
     if (crashFlipModeActive) {

@@ -70,6 +70,9 @@ void pgResetFn_mixerConfig(mixerConfig_t *mixerConfig)
     mixerConfig->mixer_type = MIXER_LEGACY;
 #ifdef USE_VTOL
     mixerConfig->mixer_profile_count = 1;
+    mixerConfig->mixer_transition_time = 1500;
+    mixerConfig->failsafe_mixer_profile = 0;
+    mixerConfig->failsafe_mixer_action = 0;
 #endif
 #ifdef USE_RPM_LIMIT
     mixerConfig->rpm_limit = false;

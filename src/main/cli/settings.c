@@ -1128,6 +1128,13 @@ const clivalue_t valueTable[] = {
 #endif
 #ifdef USE_VTOL
     { PARAM_NAME_MIXER_PROFILE_COUNT, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 1, MAX_MIXER_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_profile_count) },
+    { PARAM_NAME_MIXER_TRANSITION_TIME, VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 10000 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_transition_time) },
+    { "mixer_linked_pid_profile_1", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, PID_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_pid_profile[0]) },
+    { "mixer_linked_pid_profile_2", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, PID_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_pid_profile[1]) },
+    { "mixer_linked_rate_profile_1", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_rate_profile[0]) },
+    { "mixer_linked_rate_profile_2", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_rate_profile[1]) },
+    { PARAM_NAME_FAILSAFE_MIXER_PROFILE, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, MAX_MIXER_PROFILE_COUNT - 1 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, failsafe_mixer_profile) },
+    { PARAM_NAME_FAILSAFE_MIXER_ACTION, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, FAILSAFE_MIXER_ACTION_COUNT - 1 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, failsafe_mixer_action) },
 #endif
 
 // PG_MOTOR_3D_CONFIG
