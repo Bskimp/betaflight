@@ -139,6 +139,9 @@ bool isMixerUsingServos(void);
 void writeServos(void);
 void servoMixerLoadMix(int index);
 void loadCustomServoMixer(void);
+#ifdef USE_VTOL
+void loadServoMixerFromRules(const servoMixer_t *rules, int maxRules);
+#endif
 int servoDirection(int servoIndex, int fromChannel);
 void servosInit(void);
 void servosFilterInit(void);

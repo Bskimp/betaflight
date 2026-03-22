@@ -257,6 +257,22 @@ void loadCustomServoMixer(void)
     }
 }
 
+#ifdef USE_VTOL
+void loadServoMixerFromRules(const servoMixer_t *rules, int maxRules)
+{
+    servoRuleCount = 0;
+    memset(currentServoMixer, 0, sizeof(currentServoMixer));
+
+    for (int i = 0; i < maxRules; i++) {
+        if (rules[i].rate == 0) {
+            break;
+        }
+        currentServoMixer[i] = rules[i];
+        servoRuleCount++;
+    }
+}
+#endif
+
 static void servoConfigureOutput(void)
 {
     if (useServo) {

@@ -98,6 +98,10 @@
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
+#include "flight/mixer_init.h"
+#ifdef USE_VTOL
+#include "flight/mixer_profile.h"
+#endif
 #include "flight/gps_rescue.h"
 #include "flight/pid.h"
 #include "flight/pid_init.h"
@@ -512,7 +516,29 @@ void initPhase2(void)
 
     serialInit(featureIsEnabled(FEATURE_SOFTSERIAL));
 
-    mixerInit(mixerConfig()->mixerMode);
+#ifdef USE_VTOL
+    if (mixerConfig()->mixer_profile_count > 1) {
+        // VTOL: initialize with profile 0, apply its motor/servo mix
+        mixerProfileInit();
+        mixerInit(mixerProfiles(0)->mixerMode);
+
+        // scan both profiles for superset motor/servo allocation
+        uint8_t supersetMotors = 0;
+        uint8_t supersetServos = 0;
+        mixerProfileGetSuperset(&supersetMotors, &supersetServos);
+
+        // apply profile 0 motor mix into runtime
+        mixerProfileSelect(0);
+
+        // claim the superset motor count for hardware allocation
+        if (supersetMotors > getMotorCount()) {
+            mixerRuntime.motorCount = supersetMotors;
+        }
+    } else
+#endif
+    {
+        mixerInit(mixerConfig()->mixerMode);
+    }
 
 #ifdef USE_MOTOR
     /* Motors needs to be initialized soon as posible because hardware initialization
@@ -700,7 +726,12 @@ void initPhase3(void)
 
 #ifdef USE_SERVOS
     servosInit();
+#ifdef USE_VTOL
+    // VTOL always needs servo hardware when mixer_profile_count > 1
+    if (isMixerUsingServos() || mixerConfig()->mixer_profile_count > 1) {
+#else
     if (isMixerUsingServos()) {
+#endif
         //pwm_params.useChannelForwarding = featureIsEnabled(FEATURE_CHANNEL_FORWARDING);
         servoDevInit(&servoConfig()->dev);
     }

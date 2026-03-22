@@ -105,6 +105,9 @@ typedef struct mixerConfig_s {
     uint16_t rpm_limit_d;
     uint16_t rpm_limit_value;
 #endif
+#ifdef USE_VTOL
+    uint8_t mixer_profile_count;    // 1 = dormant (default), 2 = VTOL active
+#endif
 } mixerConfig_t;
 
 PG_DECLARE(mixerConfig_t, mixerConfig);

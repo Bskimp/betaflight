@@ -105,6 +105,9 @@ bool cliMode = false;
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
+#ifdef USE_VTOL
+#include "flight/mixer_profile.h"
+#endif
 #include "flight/pid.h"
 #include "flight/position.h"
 #include "flight/servos.h"
@@ -195,6 +198,9 @@ static bool configIsInCopy = false;
 #define CURRENT_PROFILE_INDEX -1
 static int8_t pidProfileIndexToUse = CURRENT_PROFILE_INDEX;
 static int8_t rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
+#ifdef USE_VTOL
+static int8_t mixerProfileIndexToUse = CURRENT_PROFILE_INDEX;
+#endif
 
 #ifdef USE_CLI_BATCH
 static bool commandBatchActive = false;
@@ -4232,6 +4238,74 @@ static void cliDumpRateProfile(const char *cmdName, uint8_t rateProfileIndex, du
     rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
 }
 
+#ifdef USE_VTOL
+static void cliMixerProfile(const char *cmdName, char *cmdline)
+{
+    if (isEmpty(cmdline)) {
+        cliPrintLinef("mixer_profile %d", mixerProfileGetActiveIndex());
+        return;
+    }
+    const int i = atoi(cmdline);
+    if (i >= 0 && i < mixerConfig()->mixer_profile_count) {
+        mixerProfileSelect(i);
+        cliMixerProfile(cmdName, "");
+    } else {
+        cliPrintErrorLinef(cmdName, "MIXER PROFILE OUTSIDE OF [0..%d]", mixerConfig()->mixer_profile_count - 1);
+    }
+}
+
+static void cliDumpMixerProfile(const char *cmdName, uint8_t mpIndex, dumpFlags_t dumpMask)
+{
+    UNUSED(cmdName);
+    if (mpIndex >= MAX_MIXER_PROFILE_COUNT) {
+        return;
+    }
+
+    mixerProfileIndexToUse = mpIndex;
+
+    cliPrintLinefeed();
+    cliPrintLinef("mixer_profile %d", mpIndex);
+
+    // dump motor mix for this profile
+    const mixerProfile_t *profile = mixerProfiles(mpIndex);
+    const char *mmixFormat = "mmix %d %s %s %s %s";
+    char buf0[FTOA_BUFFER_LENGTH];
+    char buf1[FTOA_BUFFER_LENGTH];
+    char buf2[FTOA_BUFFER_LENGTH];
+    char buf3[FTOA_BUFFER_LENGTH];
+    for (uint32_t i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
+        if (profile->motorMix[i].throttle == 0.0f) {
+            break;
+        }
+        cliDumpPrintLinef(dumpMask, false, mmixFormat,
+            i,
+            ftoa(profile->motorMix[i].throttle, buf0),
+            ftoa(profile->motorMix[i].roll, buf1),
+            ftoa(profile->motorMix[i].pitch, buf2),
+            ftoa(profile->motorMix[i].yaw, buf3));
+    }
+
+    // dump servo mix for this profile
+    const char *smixFormat = "smix %d %d %d %d %d %d %d %d";
+    for (uint32_t i = 0; i < MAX_SERVO_RULES; i++) {
+        if (profile->servoMix[i].rate == 0) {
+            break;
+        }
+        cliDumpPrintLinef(dumpMask, false, smixFormat,
+            i,
+            profile->servoMix[i].targetChannel,
+            profile->servoMix[i].inputSource,
+            profile->servoMix[i].rate,
+            profile->servoMix[i].speed,
+            profile->servoMix[i].min,
+            profile->servoMix[i].max,
+            profile->servoMix[i].box);
+    }
+
+    mixerProfileIndexToUse = CURRENT_PROFILE_INDEX;
+}
+#endif // USE_VTOL
+
 #ifdef USE_CLI_BATCH
 static void cliPrintCommandBatchWarning(const char *cmdName, const char *warning)
 {
@@ -6475,7 +6549,22 @@ static void printConfig(const char *cmdName, char *cmdline, bool doDiff)
                     cliPrintHashLine("restore original rateprofile selection");
 
                     cliRateProfile(cmdName, "");
+                }
 
+#ifdef USE_VTOL
+                if (mixerConfig()->mixer_profile_count > 1) {
+                    for (uint32_t mpIndex = 0; mpIndex < mixerConfig()->mixer_profile_count; mpIndex++) {
+                        cliDumpMixerProfile(cmdName, mpIndex, dumpMask);
+                    }
+
+                    if (!(dumpMask & BARE)) {
+                        cliPrintHashLine("restore original mixer_profile selection");
+                        cliPrintLinef("mixer_profile %d", mixerProfileGetActiveIndex());
+                    }
+                }
+#endif
+
+                if (!(dumpMask & BARE)) {
                     cliPrintHashLine("save configuration");
                     cliPrint("save");
 #ifdef USE_CLI_BATCH
@@ -6665,6 +6754,9 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("mcu_id", "id of the microcontroller", NULL, cliMcuId),
 #ifndef USE_QUAD_MIXER_ONLY
     CLI_COMMAND_DEF("mixer", "configure mixer", "list\r\n\t<name>", cliMixer),
+#endif
+#ifdef USE_VTOL
+    CLI_COMMAND_DEF("mixer_profile", "change mixer profile", "[<index>]", cliMixerProfile),
 #endif
     CLI_COMMAND_DEF("mmix", "custom motor mixer", NULL, cliMotorMix),
 #ifdef USE_LED_STRIP_STATUS_MODE

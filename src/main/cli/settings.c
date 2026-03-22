@@ -60,6 +60,9 @@
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
+#ifdef USE_VTOL
+#include "flight/mixer_profile.h"
+#endif
 #include "flight/pid.h"
 #include "flight/position.h"
 #include "flight/rpm_filter.h"
@@ -1122,6 +1125,9 @@ const clivalue_t valueTable[] = {
     { "rpm_limit_i",                VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 1000 },       PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_i) },
     { "rpm_limit_d",                VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 100 },        PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_d) },
     { "rpm_limit_value",            VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 1, UINT16_MAX }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_value) },
+#endif
+#ifdef USE_VTOL
+    { PARAM_NAME_MIXER_PROFILE_COUNT, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 1, MAX_MIXER_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_profile_count) },
 #endif
 
 // PG_MOTOR_3D_CONFIG

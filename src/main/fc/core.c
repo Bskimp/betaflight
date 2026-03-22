@@ -365,6 +365,14 @@ if (crashFlipModeActive) {
             unsetArmingDisabled(ARMING_DISABLED_POSHOLD);
         }
 
+#ifdef USE_VTOL
+        if (mixerConfig()->mixer_profile_count > 1 && featureIsEnabled(FEATURE_3D)) {
+            setArmingDisabled(ARMING_DISABLED_VTOL_3D);
+        } else {
+            unsetArmingDisabled(ARMING_DISABLED_VTOL_3D);
+        }
+#endif
+
         if (calculateThrottleStatus() != THROTTLE_LOW) {
             setArmingDisabled(ARMING_DISABLED_THROTTLE);
         } else {

@@ -68,6 +68,9 @@ void pgResetFn_mixerConfig(mixerConfig_t *mixerConfig)
     mixerConfig->crashflip_auto_rearm = false;
 #endif
     mixerConfig->mixer_type = MIXER_LEGACY;
+#ifdef USE_VTOL
+    mixerConfig->mixer_profile_count = 1;
+#endif
 #ifdef USE_RPM_LIMIT
     mixerConfig->rpm_limit = false;
     mixerConfig->rpm_limit_p = 25;
