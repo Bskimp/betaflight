@@ -752,6 +752,13 @@ static uint8_t getRateProfileIndexToUse(void)
     return rateProfileIndexToUse == CURRENT_PROFILE_INDEX ? getCurrentControlRateProfileIndex() : rateProfileIndexToUse;
 }
 
+#ifdef USE_VTOL
+static int8_t getMixerProfileIndexToUse(void)
+{
+    return mixerProfileIndexToUse;
+}
+#endif
+
 static uint16_t getValueOffset(const clivalue_t *value)
 {
     switch (value->type & VALUE_SECTION_MASK) {
@@ -1870,8 +1877,16 @@ static void cliMotorMix(const char *cmdName, char *cmdline)
         printMotorMix(DUMP_MASTER, customMotorMixer(0), NULL, NULL);
     } else if (strncasecmp(cmdline, "reset", 5) == 0) {
         // erase custom mixer
-        for (uint32_t i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
-            customMotorMixerMutable(i)->throttle = 0.0f;
+#ifdef USE_VTOL
+        if (getMixerProfileIndexToUse() != CURRENT_PROFILE_INDEX) {
+            memset(mixerProfilesMutable(getMixerProfileIndexToUse())->motorMix, 0,
+                   sizeof(motorMixer_t) * MAX_SUPPORTED_MOTORS);
+        } else
+#endif
+        {
+            for (uint32_t i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
+                customMotorMixerMutable(i)->throttle = 0.0f;
+            }
         }
     } else if (strncasecmp(cmdline, "load", 4) == 0) {
         ptr = nextArg(cmdline);
@@ -1894,24 +1909,33 @@ static void cliMotorMix(const char *cmdName, char *cmdline)
         ptr = cmdline;
         uint32_t i = atoi(ptr); // get motor number
         if (i < MAX_SUPPORTED_MOTORS) {
+            motorMixer_t *mix;
+#ifdef USE_VTOL
+            if (getMixerProfileIndexToUse() != CURRENT_PROFILE_INDEX) {
+                mix = &mixerProfilesMutable(getMixerProfileIndexToUse())->motorMix[i];
+            } else
+#endif
+            {
+                mix = customMotorMixerMutable(i);
+            }
             ptr = nextArg(ptr);
             if (ptr) {
-                customMotorMixerMutable(i)->throttle = fastA2F(ptr);
+                mix->throttle = fastA2F(ptr);
                 check++;
             }
             ptr = nextArg(ptr);
             if (ptr) {
-                customMotorMixerMutable(i)->roll = fastA2F(ptr);
+                mix->roll = fastA2F(ptr);
                 check++;
             }
             ptr = nextArg(ptr);
             if (ptr) {
-                customMotorMixerMutable(i)->pitch = fastA2F(ptr);
+                mix->pitch = fastA2F(ptr);
                 check++;
             }
             ptr = nextArg(ptr);
             if (ptr) {
-                customMotorMixerMutable(i)->yaw = fastA2F(ptr);
+                mix->yaw = fastA2F(ptr);
                 check++;
             }
             if (check != 4) {
@@ -2350,9 +2374,17 @@ static void cliServoMix(const char *cmdName, char *cmdline)
         printServoMix(DUMP_MASTER, customServoMixers(0), NULL, NULL);
     } else if (strncasecmp(cmdline, "reset", 5) == 0) {
         // erase custom mixer
-        memset(customServoMixers_array(), 0, sizeof(*customServoMixers_array()));
-        for (uint32_t i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
-            servoParamsMutable(i)->reversedSources = 0;
+#ifdef USE_VTOL
+        if (getMixerProfileIndexToUse() != CURRENT_PROFILE_INDEX) {
+            memset(mixerProfilesMutable(getMixerProfileIndexToUse())->servoMix, 0,
+                   sizeof(servoMixer_t) * MAX_SERVO_RULES);
+        } else
+#endif
+        {
+            memset(customServoMixers_array(), 0, sizeof(*customServoMixers_array()));
+            for (uint32_t i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+                servoParamsMutable(i)->reversedSources = 0;
+            }
         }
     } else if (strncasecmp(cmdline, "load", 4) == 0) {
         const char *ptr = nextArg(cmdline);
@@ -2440,13 +2472,22 @@ static void cliServoMix(const char *cmdName, char *cmdline)
             args[MIN] >= 0 && args[MIN] <= 100 &&
             args[MAX] >= 0 && args[MAX] <= 100 && args[MIN] < args[MAX] &&
             args[BOX] >= 0 && args[BOX] <= MAX_SERVO_BOXES) {
-            customServoMixersMutable(i)->targetChannel = args[TARGET];
-            customServoMixersMutable(i)->inputSource = args[INPUT];
-            customServoMixersMutable(i)->rate = args[RATE];
-            customServoMixersMutable(i)->speed = args[SPEED];
-            customServoMixersMutable(i)->min = args[MIN];
-            customServoMixersMutable(i)->max = args[MAX];
-            customServoMixersMutable(i)->box = args[BOX];
+            servoMixer_t *mix;
+#ifdef USE_VTOL
+            if (getMixerProfileIndexToUse() != CURRENT_PROFILE_INDEX) {
+                mix = &mixerProfilesMutable(getMixerProfileIndexToUse())->servoMix[i];
+            } else
+#endif
+            {
+                mix = customServoMixersMutable(i);
+            }
+            mix->targetChannel = args[TARGET];
+            mix->inputSource = args[INPUT];
+            mix->rate = args[RATE];
+            mix->speed = args[SPEED];
+            mix->min = args[MIN];
+            mix->max = args[MAX];
+            mix->box = args[BOX];
             cliServoMix(cmdName, "");
         } else {
             cliShowArgumentRangeError(cmdName, NULL, 0, 0);
@@ -4242,15 +4283,20 @@ static void cliDumpRateProfile(const char *cmdName, uint8_t rateProfileIndex, du
 static void cliMixerProfile(const char *cmdName, char *cmdline)
 {
     if (isEmpty(cmdline)) {
-        cliPrintLinef("mixer_profile %d", mixerProfileGetActiveIndex());
+        if (mixerProfileIndexToUse == CURRENT_PROFILE_INDEX) {
+            cliPrintLinef("mixer_profile %d", mixerProfileGetActiveIndex());
+        } else {
+            cliPrintLinef("mixer_profile %d", mixerProfileIndexToUse);
+        }
         return;
     }
     const int i = atoi(cmdline);
-    if (i >= 0 && i < mixerConfig()->mixer_profile_count) {
+    if (i >= 0 && i < MAX_MIXER_PROFILE_COUNT) {
+        mixerProfileIndexToUse = i;
         mixerProfileSelect(i);
         cliMixerProfile(cmdName, "");
     } else {
-        cliPrintErrorLinef(cmdName, "MIXER PROFILE OUTSIDE OF [0..%d]", mixerConfig()->mixer_profile_count - 1);
+        cliPrintErrorLinef(cmdName, "MIXER PROFILE OUTSIDE OF [0..%d]", MAX_MIXER_PROFILE_COUNT - 1);
     }
 }
 
