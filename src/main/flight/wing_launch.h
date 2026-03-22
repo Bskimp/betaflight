@@ -47,5 +47,6 @@ float wingLaunchGetPitchAngle(void);
 float wingLaunchGetTransitionFactor(void);
 int32_t wingLaunchGetClimbTimeRemainingMs(void);
 wingLaunchState_e wingLaunchGetState(void);
+bool wingLaunchIsThrottleGatePassed(void);
 
 #endif // USE_WING_LAUNCH

@@ -1986,7 +1986,11 @@ static void osdElementWingLaunchStatus(osdElementParms_t *element)
         }
         break;
     case WING_LAUNCH_DETECTED:
-        tfp_sprintf(element->buff, "THROW!");
+        if (!wingLaunchIsThrottleGatePassed()) {
+            tfp_sprintf(element->buff, "THR UP");
+        } else {
+            tfp_sprintf(element->buff, "THROW!");
+        }
         element->attr = DISPLAYPORT_SEVERITY_WARNING;
         break;
     case WING_LAUNCH_MOTOR_DELAY:

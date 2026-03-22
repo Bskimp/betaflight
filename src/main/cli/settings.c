@@ -1498,6 +1498,7 @@ const clivalue_t valueTable[] = {
     { PARAM_NAME_WING_LAUNCH_TRANSITION,   VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 200, 3000 }, PG_PID_PROFILE, offsetof(pidProfile_t, wing_launch_transition) },
     { PARAM_NAME_WING_LAUNCH_MAX_TILT,     VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 5, 90 }, PG_PID_PROFILE, offsetof(pidProfile_t, wing_launch_max_tilt) },
     { PARAM_NAME_WING_LAUNCH_IDLE_THR,     VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 25 }, PG_PID_PROFILE, offsetof(pidProfile_t, wing_launch_idle_thr) },
+    { PARAM_NAME_WING_LAUNCH_STICK_OVERRIDE, VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, wing_launch_stick_override) },
 #endif // USE_WING_LAUNCH
 
 // PG_TELEMETRY_CONFIG

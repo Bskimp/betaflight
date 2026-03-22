@@ -271,6 +271,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .wing_launch_transition = 1000,
         .wing_launch_max_tilt = 45,
         .wing_launch_idle_thr = 0,
+        .wing_launch_stick_override = 0,
 #endif // USE_WING_LAUNCH
         .chirp_lag_freq_hz = 3,
         .chirp_lead_freq_hz = 30,

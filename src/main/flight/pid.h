@@ -333,6 +333,7 @@ typedef struct pidProfile_s {
     uint16_t wing_launch_transition;    // Blend time to pilot control (ms)
     uint8_t wing_launch_max_tilt;       // Abort if roll exceeds this (degrees)
     uint8_t wing_launch_idle_thr;       // Throttle percent while waiting for throw
+    uint8_t wing_launch_stick_override; // Stick percent to override launch (0=disabled)
 #endif // USE_WING_LAUNCH
 
     uint8_t chirp_lag_freq_hz;              // leadlag1Filter cutoff/pole to shape the excitation signal

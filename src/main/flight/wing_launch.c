@@ -34,9 +34,13 @@
 #include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
+#include "fc/rc_controls.h"
+
 #include "flight/imu.h"
 #include "flight/pid.h"
 #include "flight/wing_launch.h"
+
+#include "rx/rx.h"
 
 #include "sensors/acceleration.h"
 
@@ -45,6 +49,7 @@ static timeUs_t stateStartTimeUs = 0;
 static bool wasArmed = false;
 static float motorOutput = 0.0f;
 static float transitionFactor = 0.0f;
+static bool throttleGatePassed = false;
 
 // config cache (populated from pidProfile in wingLaunchInit)
 static uint16_t motorDelayMs = 100;
@@ -56,6 +61,7 @@ static uint16_t transitionMs = 1000;
 static float maxTiltDeg = 45.0f;
 static float idleThrottle = 0.0f;
 static float accelThreshG = 0.0f;
+static float stickOverrideThresh = 0.0f;
 
 static void transitionToState(wingLaunchState_e newState, timeUs_t currentTimeUs)
 {
@@ -79,12 +85,24 @@ void wingLaunchInit(const pidProfile_t *pidProfile)
     maxTiltDeg = (float)pidProfile->wing_launch_max_tilt;
     idleThrottle = pidProfile->wing_launch_idle_thr / 100.0f;
     accelThreshG = pidProfile->wing_launch_accel_thresh / 10.0f;
+    stickOverrideThresh = pidProfile->wing_launch_stick_override / 100.0f * 500.0f;
 
     launchState = WING_LAUNCH_IDLE;
     stateStartTimeUs = 0;
     wasArmed = false;
     motorOutput = idleThrottle;
     transitionFactor = 0.0f;
+    throttleGatePassed = false;
+}
+
+static bool isStickOverrideActive(void)
+{
+    if (stickOverrideThresh <= 0.0f) {
+        return false;
+    }
+    return ABS(rcCommand[ROLL]) > stickOverrideThresh
+        || ABS(rcCommand[PITCH]) > stickOverrideThresh
+        || ABS(rcCommand[YAW]) > stickOverrideThresh;
 }
 
 void wingLaunchUpdate(timeUs_t currentTimeUs)
@@ -123,7 +141,14 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
 
     case WING_LAUNCH_DETECTED:
         motorOutput = idleThrottle;
-        if (acc.accMagnitude > accelThreshG) {
+        // throttle gate: require pilot to raise throttle before throw detection
+        if (!throttleGatePassed) {
+            const float throttleGatePwm = PWM_RANGE_MIN + launchThrottle * PWM_RANGE;
+            if (rcData[THROTTLE] >= throttleGatePwm) {
+                throttleGatePassed = true;
+            }
+        }
+        if (throttleGatePassed && acc.accMagnitude > accelThreshG) {
             transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
         }
         if (rollAngleDeg > maxTiltDeg || pitchAngleDeg < -maxTiltDeg) {
@@ -152,6 +177,9 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
         if (rollAngleDeg > maxTiltDeg || pitchAngleDeg < -maxTiltDeg) {
             transitionToState(WING_LAUNCH_ABORT, currentTimeUs);
         }
+        if (isStickOverrideActive()) {
+            transitionToState(WING_LAUNCH_TRANSITION, currentTimeUs);
+        }
         break;
     }
 
@@ -163,6 +191,9 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
         // safety: abort on excessive roll or dive
         if (rollAngleDeg > maxTiltDeg || pitchAngleDeg < -maxTiltDeg) {
             transitionToState(WING_LAUNCH_ABORT, currentTimeUs);
+        }
+        if (isStickOverrideActive()) {
+            transitionToState(WING_LAUNCH_TRANSITION, currentTimeUs);
         }
         break;
 
@@ -201,7 +232,7 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
     DEBUG_SET(DEBUG_WING_LAUNCH, 5, lrintf(attitude.values.roll));
     DEBUG_SET(DEBUG_WING_LAUNCH, 6, lrintf(transitionFactor * 1000));
     DEBUG_SET(DEBUG_WING_LAUNCH, 7, launchState == WING_LAUNCH_CLIMBING
-        ? (int16_t)(climbTimeMs - stateElapsedMs(currentTimeUs)) : 0);
+        ? MAX(0, (int16_t)(climbTimeMs - stateElapsedMs(currentTimeUs))) : 0);
 }
 
 void wingLaunchReset(void)
@@ -210,6 +241,7 @@ void wingLaunchReset(void)
     wasArmed = false;
     motorOutput = idleThrottle;
     transitionFactor = 0.0f;
+    throttleGatePassed = false;
 }
 
 bool isWingLaunchActive(void)
@@ -261,7 +293,8 @@ int32_t wingLaunchGetClimbTimeRemainingMs(void)
 {
     if (launchState == WING_LAUNCH_CLIMBING) {
         const timeDelta_t elapsed = cmpTimeUs(micros(), stateStartTimeUs) / 1000;
-        return (int32_t)(climbTimeMs - elapsed);
+        const int32_t remaining = (int32_t)(climbTimeMs - elapsed);
+        return (remaining > 0) ? remaining : 0;
     }
     return 0;
 }
@@ -269,6 +302,11 @@ int32_t wingLaunchGetClimbTimeRemainingMs(void)
 wingLaunchState_e wingLaunchGetState(void)
 {
     return launchState;
+}
+
+bool wingLaunchIsThrottleGatePassed(void)
+{
+    return throttleGatePassed;
 }
 
 #endif // USE_WING_LAUNCH

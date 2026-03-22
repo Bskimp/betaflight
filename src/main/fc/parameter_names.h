@@ -88,6 +88,7 @@
 #define PARAM_NAME_WING_LAUNCH_TRANSITION "wing_launch_transition"
 #define PARAM_NAME_WING_LAUNCH_MAX_TILT "wing_launch_max_tilt"
 #define PARAM_NAME_WING_LAUNCH_IDLE_THR "wing_launch_idle_thr"
+#define PARAM_NAME_WING_LAUNCH_STICK_OVERRIDE "wing_launch_stick_override"
 #define PARAM_NAME_SPA_ROLL_CENTER "spa_roll_center"
 #define PARAM_NAME_SPA_ROLL_WIDTH "spa_roll_width"
 #define PARAM_NAME_SPA_ROLL_MODE "spa_roll_mode"
