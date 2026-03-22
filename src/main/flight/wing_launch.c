@@ -196,7 +196,12 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
     DEBUG_SET(DEBUG_WING_LAUNCH, 0, launchState);
     DEBUG_SET(DEBUG_WING_LAUNCH, 1, stateElapsedMs(currentTimeUs));
     DEBUG_SET(DEBUG_WING_LAUNCH, 2, lrintf(motorOutput * 1000));
-    DEBUG_SET(DEBUG_WING_LAUNCH, 3, lrintf(transitionFactor * 1000));
+    DEBUG_SET(DEBUG_WING_LAUNCH, 3, lrintf(acc.accMagnitude * 100));
+    DEBUG_SET(DEBUG_WING_LAUNCH, 4, lrintf(attitude.values.pitch));
+    DEBUG_SET(DEBUG_WING_LAUNCH, 5, lrintf(attitude.values.roll));
+    DEBUG_SET(DEBUG_WING_LAUNCH, 6, lrintf(transitionFactor * 1000));
+    DEBUG_SET(DEBUG_WING_LAUNCH, 7, launchState == WING_LAUNCH_CLIMBING
+        ? (int16_t)(climbTimeMs - stateElapsedMs(currentTimeUs)) : 0);
 }
 
 void wingLaunchReset(void)
@@ -250,6 +255,15 @@ float wingLaunchGetPitchAngle(void)
 float wingLaunchGetTransitionFactor(void)
 {
     return transitionFactor;
+}
+
+int32_t wingLaunchGetClimbTimeRemainingMs(void)
+{
+    if (launchState == WING_LAUNCH_CLIMBING) {
+        const timeDelta_t elapsed = cmpTimeUs(micros(), stateStartTimeUs) / 1000;
+        return (int32_t)(climbTimeMs - elapsed);
+    }
+    return 0;
 }
 
 wingLaunchState_e wingLaunchGetState(void)

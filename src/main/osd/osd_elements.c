@@ -1995,9 +1995,14 @@ static void osdElementWingLaunchStatus(osdElementParms_t *element)
         element->attr = DISPLAYPORT_SEVERITY_WARNING;
         break;
     case WING_LAUNCH_CLIMBING:
-        tfp_sprintf(element->buff, "CLIMBING");
+    {
+        const int32_t remainMs = wingLaunchGetClimbTimeRemainingMs();
+        const int32_t secs = remainMs / 1000;
+        const int32_t tenths = (remainMs % 1000) / 100;
+        tfp_sprintf(element->buff, "CLM %d.%ds", (int)secs, (int)tenths);
         element->attr = DISPLAYPORT_SEVERITY_WARNING;
         break;
+    }
     case WING_LAUNCH_TRANSITION:
         tfp_sprintf(element->buff, "RECOVER");
         element->attr = DISPLAYPORT_SEVERITY_INFO;
