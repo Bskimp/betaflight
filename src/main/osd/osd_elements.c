@@ -163,6 +163,9 @@
 #ifdef USE_WING_LAUNCH
 #include "flight/wing_launch.h"
 #endif
+#ifdef USE_VTOL
+#include "flight/mixer_profile.h"
+#endif
 
 #include "io/gps.h"
 #include "io/vtx.h"
@@ -2023,6 +2026,19 @@ static void osdElementWingLaunchStatus(osdElementParms_t *element)
 }
 #endif // USE_WING_LAUNCH
 
+#ifdef USE_VTOL
+static void osdElementMixerProfile(osdElementParms_t *element)
+{
+    const uint8_t activeProfile = mixerProfileGetActiveIndex();
+    if (mixerProfileTransitionInProgress()) {
+        const int pct = lrintf(mixerProfileTransitionProgress() * 100.0f);
+        tfp_sprintf(element->buff, "MP:%d>%d%%", activeProfile + 1, pct);
+    } else {
+        tfp_sprintf(element->buff, "MP:%d", activeProfile + 1);
+    }
+}
+#endif // USE_VTOL
+
 // Define the mapping between the OSD element id and the function to draw it
 
 const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
@@ -2174,6 +2190,9 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
 #ifdef USE_WING_LAUNCH
     [OSD_WING_LAUNCH_STATUS]     = osdElementWingLaunchStatus,
 #endif
+#ifdef USE_VTOL
+    [OSD_MIXER_PROFILE]          = osdElementMixerProfile,
+#endif
 };
 
 // Define the mapping between the OSD element id and the function to draw its background (static part)
@@ -2251,6 +2270,10 @@ void osdAddActiveElements(void)
 
 #ifdef USE_WING_LAUNCH
     osdAddActiveElement(OSD_WING_LAUNCH_STATUS);
+#endif
+
+#ifdef USE_VTOL
+    osdAddActiveElement(OSD_MIXER_PROFILE);
 #endif
 }
 

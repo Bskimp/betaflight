@@ -48,6 +48,7 @@ typedef struct mixerProfile_s {
     uint8_t mixerMode;              // mixerMode_e
     uint8_t platformType;           // platformType_e
     motorMixer_t motorMix[MAX_SUPPORTED_MOTORS];
+    uint8_t motorTransitionOnly[MAX_SUPPORTED_MOTORS]; // 1 = motor only active when BOXMIXERTRANSITION is on
     servoMixer_t servoMix[MAX_SERVO_RULES];
 } mixerProfile_t;
 
@@ -64,5 +65,12 @@ void mixerProfileTransitionUpdate(uint32_t currentTimeMs);
 bool mixerProfileTransitionInProgress(void);
 float mixerProfileTransitionProgress(void);
 void mixerProfileOnFailsafe(void);
+
+// transition blending (PR3) — get FROM and TO motor/servo mixes for dual evaluation
+void mixerProfileGetTransitionMixes(const motorMixer_t **fromMix, uint8_t *fromCount,
+                                     const motorMixer_t **toMix, uint8_t *toCount);
+void mixerProfileGetTransitionServoMixes(const servoMixer_t **fromRules, uint8_t *fromCount,
+                                          const servoMixer_t **toRules, uint8_t *toCount);
+const uint8_t *mixerProfileGetTransitionOnlyFlags(uint8_t profileIndex);
 
 #endif // USE_VTOL

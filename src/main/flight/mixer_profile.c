@@ -339,4 +339,59 @@ void mixerProfileGetSuperset(uint8_t *maxMotors, uint8_t *maxServos)
     *maxServos = sMax;
 }
 
+// ---- transition blending helpers (PR3) ----
+
+static uint8_t countProfileMotors(const mixerProfile_t *profile)
+{
+    uint8_t count = 0;
+    for (int i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
+        if (profile->motorMix[i].throttle == 0.0f) {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
+
+static uint8_t countProfileServoRules(const mixerProfile_t *profile)
+{
+    uint8_t count = 0;
+    for (int i = 0; i < MAX_SERVO_RULES; i++) {
+        if (profile->servoMix[i].rate == 0) {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
+
+void mixerProfileGetTransitionMixes(const motorMixer_t **fromMix, uint8_t *fromCount,
+                                     const motorMixer_t **toMix, uint8_t *toCount)
+{
+    const mixerProfile_t *from = mixerProfiles(transition.fromProfile);
+    const mixerProfile_t *to = mixerProfiles(transition.toProfile);
+
+    *fromMix = from->motorMix;
+    *fromCount = countProfileMotors(from);
+    *toMix = to->motorMix;
+    *toCount = countProfileMotors(to);
+}
+
+void mixerProfileGetTransitionServoMixes(const servoMixer_t **fromRules, uint8_t *fromCount,
+                                          const servoMixer_t **toRules, uint8_t *toCount)
+{
+    const mixerProfile_t *from = mixerProfiles(transition.fromProfile);
+    const mixerProfile_t *to = mixerProfiles(transition.toProfile);
+
+    *fromRules = from->servoMix;
+    *fromCount = countProfileServoRules(from);
+    *toRules = to->servoMix;
+    *toCount = countProfileServoRules(to);
+}
+
+const uint8_t *mixerProfileGetTransitionOnlyFlags(uint8_t profileIndex)
+{
+    return mixerProfiles(profileIndex)->motorTransitionOnly;
+}
+
 #endif // USE_VTOL

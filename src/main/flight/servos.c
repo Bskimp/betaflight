@@ -49,6 +49,9 @@
 #ifdef USE_WING_LAUNCH
 #include "flight/wing_launch.h"
 #endif
+#ifdef USE_VTOL
+#include "flight/mixer_profile.h"
+#endif
 
 #include "io/gimbal.h"
 
@@ -492,7 +495,17 @@ void servoMixer(void)
     // mix servos according to rules
     for (int i = 0; i < servoRuleCount; i++) {
         // consider rule if no box assigned or box is active
-        if (currentServoMixer[i].box == 0 || IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[i].box - 1)) {
+        // box 1-3 = BOXSERVO1-3, box 4 = BOXMIXERTRANSITION (USE_VTOL only)
+        bool boxActive = (currentServoMixer[i].box == 0);
+        if (!boxActive && currentServoMixer[i].box <= 3) {
+            boxActive = IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[i].box - 1);
+        }
+#ifdef USE_VTOL
+        if (!boxActive && currentServoMixer[i].box == 4) {
+            boxActive = IS_RC_MODE_ACTIVE(BOXMIXERTRANSITION);
+        }
+#endif
+        if (boxActive) {
             uint8_t target = currentServoMixer[i].targetChannel;
             uint8_t from = currentServoMixer[i].inputSource;
             uint16_t servo_width = servoParams(target)->max - servoParams(target)->min;
@@ -518,6 +531,47 @@ void servoMixer(void)
         servo[i] = ((int32_t)servoParams(i)->rate * servo[i]) / 100L;
         servo[i] += determineServoMiddleOrForwardFromChannel(i);
     }
+
+#ifdef USE_VTOL
+    // Blend servo outputs during mixer profile transition
+    if (mixerProfileTransitionInProgress()) {
+        const float progress = mixerProfileTransitionProgress();
+
+        // servo[] now holds FROM profile outputs — save them
+        int16_t fromServo[MAX_SUPPORTED_SERVOS];
+        for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            fromServo[i] = servo[i];
+            servo[i] = 0;
+        }
+
+        // evaluate TO profile servo rules directly (no speed ramping during blend)
+        const servoMixer_t *fromRules, *toRules;
+        uint8_t fromRuleCount, toRuleCount;
+        mixerProfileGetTransitionServoMixes(&fromRules, &fromRuleCount, &toRules, &toRuleCount);
+
+        for (int i = 0; i < toRuleCount; i++) {
+            if (toRules[i].box == 0 || IS_RC_MODE_ACTIVE(BOXSERVO1 + toRules[i].box - 1)) {
+                uint8_t target = toRules[i].targetChannel;
+                uint8_t from = toRules[i].inputSource;
+                uint16_t servo_width = servoParams(target)->max - servoParams(target)->min;
+                int16_t min = toRules[i].min * servo_width / 100 - servo_width / 2;
+                int16_t max = toRules[i].max * servo_width / 100 - servo_width / 2;
+                servo[target] += servoDirection(target, from) * constrain(((int32_t)input[from] * toRules[i].rate) / 100, min, max);
+            }
+        }
+
+        // apply rate and middle to TO profile outputs
+        for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            servo[i] = ((int32_t)servoParams(i)->rate * servo[i]) / 100L;
+            servo[i] += determineServoMiddleOrForwardFromChannel(i);
+        }
+
+        // blend FROM → TO
+        for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            servo[i] = lrintf(fromServo[i] * (1.0f - progress) + servo[i] * progress);
+        }
+    }
+#endif // USE_VTOL
 }
 
 static void servoTable(void)

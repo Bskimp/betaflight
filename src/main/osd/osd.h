@@ -199,6 +199,9 @@ typedef enum {
 #ifdef USE_WING_LAUNCH
     OSD_WING_LAUNCH_STATUS,
 #endif
+#ifdef USE_VTOL
+    OSD_MIXER_PROFILE,
+#endif
     OSD_ITEM_COUNT // MUST BE LAST
 } osd_items_e;
 
