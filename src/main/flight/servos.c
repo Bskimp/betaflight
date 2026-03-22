@@ -462,6 +462,13 @@ void servoMixer(void)
     input[INPUT_RC_AUX3]     = rcData[AUX3]     - rxConfig()->midrc;
     input[INPUT_RC_AUX4]     = rcData[AUX4]     - rxConfig()->midrc;
 
+#ifdef USE_WING_LAUNCH
+    // inject pre-deflection into pitch input so it flows through servo mixer rules
+    if (wingLaunchGetPitchAngle() != 0.0f && !isWingLaunchInProgress()) {
+        input[INPUT_STABILIZED_PITCH] -= (int16_t)(wingLaunchGetPitchAngle() * 5.0f);
+    }
+#endif
+
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
         servo[i] = 0;
     }
@@ -544,14 +551,6 @@ static void servoTable(void)
         }
     }
 
-#ifdef USE_WING_LAUNCH
-    // pre-deflect elevons when AUTOLAUNCH pitch angle is set but PID isn't driving yet
-    if (wingLaunchGetPitchAngle() != 0.0f && !isWingLaunchInProgress()) {
-        const int16_t pitchOffset = (int16_t)(wingLaunchGetPitchAngle() * 5.0f);
-        servo[SERVO_FLAPPERON_1] += pitchOffset;
-        servo[SERVO_FLAPPERON_2] += pitchOffset;
-    }
-#endif
 
     // constrain servos
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {

@@ -849,6 +849,11 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
         break;
     }
 
+#ifdef USE_WING_LAUNCH
+    if (wingLaunchGetState() == WING_LAUNCH_DETECTED) {
+        applyMotorStop();
+    } else
+#endif
     if (featureIsEnabled(FEATURE_MOTOR_STOP)
         && ARMING_FLAG(ARMED)
         && !mixerRuntime.feature3dEnabled

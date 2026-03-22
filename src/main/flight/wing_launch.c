@@ -38,6 +38,8 @@
 #include "flight/pid.h"
 #include "flight/wing_launch.h"
 
+#include "sensors/acceleration.h"
+
 static wingLaunchState_e launchState = WING_LAUNCH_IDLE;
 static timeUs_t stateStartTimeUs = 0;
 static bool wasArmed = false;
@@ -53,6 +55,7 @@ static float climbAngleDeg = 45.0f;
 static uint16_t transitionMs = 1000;
 static float maxTiltDeg = 45.0f;
 static float idleThrottle = 0.0f;
+static float accelThreshG = 0.0f;
 
 static void transitionToState(wingLaunchState_e newState, timeUs_t currentTimeUs)
 {
@@ -75,6 +78,7 @@ void wingLaunchInit(const pidProfile_t *pidProfile)
     transitionMs = pidProfile->wing_launch_transition;
     maxTiltDeg = (float)pidProfile->wing_launch_max_tilt;
     idleThrottle = pidProfile->wing_launch_idle_thr / 100.0f;
+    accelThreshG = pidProfile->wing_launch_accel_thresh / 10.0f;
 
     launchState = WING_LAUNCH_IDLE;
     stateStartTimeUs = 0;
@@ -88,7 +92,10 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
     // abort if switch turned off or disarmed mid-launch
     if (!IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH) || !ARMING_FLAG(ARMED)) {
         if (launchState != WING_LAUNCH_IDLE && launchState != WING_LAUNCH_COMPLETE) {
-            transitionToState(WING_LAUNCH_ABORT, currentTimeUs);
+            motorOutput = 0.0f;
+            pidResetIterm();
+            DISABLE_FLIGHT_MODE(ANGLE_MODE);
+            transitionToState(WING_LAUNCH_COMPLETE, currentTimeUs);
         }
         if (!ARMING_FLAG(ARMED)) {
             wingLaunchReset();
@@ -101,11 +108,27 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
 
     switch (launchState) {
     case WING_LAUNCH_IDLE:
-        // arm-trigger: transition to motor delay on rising edge of ARMED
         if (ARMING_FLAG(ARMED) && !wasArmed) {
-            transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
+            pidResetIterm();
+            if (accelThreshG > 0.0f) {
+                // throw detection enabled — wait for accel spike
+                transitionToState(WING_LAUNCH_DETECTED, currentTimeUs);
+            } else {
+                // arm-trigger mode — start motors immediately
+                transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
+            }
         }
         wasArmed = ARMING_FLAG(ARMED);
+        break;
+
+    case WING_LAUNCH_DETECTED:
+        motorOutput = idleThrottle;
+        if (acc.accMagnitude > accelThreshG) {
+            transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
+        }
+        if (rollAngleDeg > maxTiltDeg || pitchAngleDeg < -maxTiltDeg) {
+            transitionToState(WING_LAUNCH_ABORT, currentTimeUs);
+        }
         break;
 
     case WING_LAUNCH_MOTOR_DELAY:
@@ -148,6 +171,8 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
         const timeDelta_t elapsedMs = stateElapsedMs(currentTimeUs);
         if (elapsedMs >= transitionMs) {
             transitionFactor = 1.0f;
+            pidResetIterm();
+            DISABLE_FLIGHT_MODE(ANGLE_MODE);
             transitionToState(WING_LAUNCH_COMPLETE, currentTimeUs);
         } else {
             transitionFactor = (float)elapsedMs / (float)transitionMs;
@@ -158,6 +183,8 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
 
     case WING_LAUNCH_ABORT:
         motorOutput = 0.0f;
+        pidResetIterm();
+        DISABLE_FLIGHT_MODE(ANGLE_MODE);
         transitionToState(WING_LAUNCH_COMPLETE, currentTimeUs);
         break;
 
@@ -194,6 +221,7 @@ float wingLaunchGetThrottle(void)
 {
     switch (launchState) {
     case WING_LAUNCH_IDLE:
+    case WING_LAUNCH_DETECTED:
     case WING_LAUNCH_MOTOR_DELAY:
         return idleThrottle;
     case WING_LAUNCH_MOTOR_RAMP:

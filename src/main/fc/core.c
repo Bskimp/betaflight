@@ -56,6 +56,7 @@
 #include "fc/rc.h"
 #include "fc/rc_adjustments.h"
 #include "fc/rc_controls.h"
+#include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 #include "fc/stats.h"
 
@@ -1043,7 +1044,7 @@ void processRxModes(timeUs_t currentTimeUs)
         || FLIGHT_MODE(POS_HOLD_MODE)
 #endif
 #ifdef USE_WING_LAUNCH
-        || isWingLaunchInProgress()
+        || (isWingLaunchInProgress() && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH))
 #endif
         ) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode

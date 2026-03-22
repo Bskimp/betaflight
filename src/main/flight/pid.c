@@ -43,6 +43,7 @@
 #include "fc/core.h"
 #include "fc/rc.h"
 #include "fc/rc_controls.h"
+#include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
 #include "flight/autopilot.h"
@@ -587,10 +588,10 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
 #endif // USE_WING
 
 #ifdef USE_WING_LAUNCH
-    if (isWingLaunchInProgress()) {
+    if (isWingLaunchInProgress() && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH)) {
         angleFeedforward = 0.0f;
         if (axis == FD_PITCH) {
-            angleTarget = wingLaunchGetPitchAngle();
+            angleTarget = -wingLaunchGetPitchAngle();
         } else {
             angleTarget = 0.0f; // wings level on roll
         }
@@ -1161,7 +1162,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
                 || FLIGHT_MODE(POS_HOLD_MODE)
 #endif
 #ifdef USE_WING_LAUNCH
-                || isWingLaunchInProgress()
+                || (isWingLaunchInProgress() && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH))
 #endif
                 ;
     levelMode_e levelMode;

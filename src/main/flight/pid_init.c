@@ -39,6 +39,9 @@
 
 #include "flight/pid.h"
 #include "flight/rpm_filter.h"
+#ifdef USE_WING_LAUNCH
+#include "flight/wing_launch.h"
+#endif
 
 #include "pg/motor.h"
 
@@ -386,6 +389,9 @@ void pidInit(const pidProfile_t *pidProfile)
 #endif
 #ifdef USE_ADVANCED_TPA
     tpaCurveInit(pidProfile);
+#endif
+#ifdef USE_WING_LAUNCH
+    wingLaunchInit(pidProfile);
 #endif
 }
 

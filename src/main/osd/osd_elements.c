@@ -152,6 +152,7 @@
 #include "fc/gps_lap_timer.h"
 #include "fc/rc_adjustments.h"
 #include "fc/rc_controls.h"
+#include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
 #include "flight/gps_rescue.h"
@@ -1978,7 +1979,11 @@ static void osdElementWingLaunchStatus(osdElementParms_t *element)
 {
     switch (wingLaunchGetState()) {
     case WING_LAUNCH_IDLE:
-        tfp_sprintf(element->buff, "LNCH RDY");
+        if (!IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH)) {
+            element->drawElement = false;
+        } else {
+            tfp_sprintf(element->buff, "LNCH RDY");
+        }
         break;
     case WING_LAUNCH_DETECTED:
         tfp_sprintf(element->buff, "THROW!");
