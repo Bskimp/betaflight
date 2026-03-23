@@ -44,6 +44,9 @@
 #include "flight/pid.h"
 #include "flight/servos.h"
 
+#include "common/sensor_alignment.h"
+#include "sensors/boardalignment.h"
+
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
 
@@ -117,6 +120,13 @@ static void mixerProfileActivateInternal(uint8_t index)
     mixerInitProfile();
     mixerResetDisarmedMotors();
 
+    // apply per-profile IMU orientation rotation
+    boardAlignmentSetVtolRotation(
+        mixerConfig()->mixer_imu_orientation_roll[index],
+        mixerConfig()->mixer_imu_orientation_pitch[index],
+        mixerConfig()->mixer_imu_orientation_yaw[index]
+    );
+
     // switch linked PID/rate profiles if configured
     const uint8_t linkedPid = mixerConfig()->mixer_linked_pid_profile[index];
     if (linkedPid > 0) {
@@ -134,6 +144,11 @@ void mixerProfileInit(void)
 {
     activeMixerProfileIndex = 0;
     transition.state = MIXER_TRANSITION_IDLE;
+}
+
+void mixerProfileApplyActive(void)
+{
+    mixerProfileActivateInternal(activeMixerProfileIndex);
 }
 
 uint8_t mixerProfileGetActiveIndex(void)

@@ -1135,6 +1135,12 @@ const clivalue_t valueTable[] = {
     { "mixer_linked_rate_profile_2", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_rate_profile[1]) },
     { PARAM_NAME_FAILSAFE_MIXER_PROFILE, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, MAX_MIXER_PROFILE_COUNT - 1 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, failsafe_mixer_profile) },
     { PARAM_NAME_FAILSAFE_MIXER_ACTION, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, FAILSAFE_MIXER_ACTION_COUNT - 1 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, failsafe_mixer_action) },
+    { "mixer_imu_orientation_roll_1",  VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_roll[0]) },
+    { "mixer_imu_orientation_roll_2",  VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_roll[1]) },
+    { "mixer_imu_orientation_pitch_1", VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_pitch[0]) },
+    { "mixer_imu_orientation_pitch_2", VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_pitch[1]) },
+    { "mixer_imu_orientation_yaw_1",   VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_yaw[0]) },
+    { "mixer_imu_orientation_yaw_2",   VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_yaw[1]) },
 #endif
 
 // PG_MOTOR_3D_CONFIG

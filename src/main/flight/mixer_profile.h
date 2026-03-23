@@ -55,6 +55,7 @@ typedef struct mixerProfile_s {
 PG_DECLARE_ARRAY(mixerProfile_t, MAX_MIXER_PROFILE_COUNT, mixerProfiles);
 
 void mixerProfileInit(void);
+void mixerProfileApplyActive(void);
 bool mixerProfileSelect(uint8_t index);
 uint8_t mixerProfileGetActiveIndex(void);
 void mixerProfileGetSuperset(uint8_t *maxMotors, uint8_t *maxServos);

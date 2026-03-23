@@ -1874,7 +1874,15 @@ static void cliMotorMix(const char *cmdName, char *cmdline)
     const char *ptr;
 
     if (isEmpty(cmdline)) {
-        printMotorMix(DUMP_MASTER, customMotorMixer(0), NULL, NULL);
+#ifdef USE_VTOL
+        if (getMixerProfileIndexToUse() != CURRENT_PROFILE_INDEX) {
+            const mixerProfile_t *profile = mixerProfiles(getMixerProfileIndexToUse());
+            printMotorMix(DUMP_MASTER, profile->motorMix, NULL, NULL);
+        } else
+#endif
+        {
+            printMotorMix(DUMP_MASTER, customMotorMixer(0), NULL, NULL);
+        }
     } else if (strncasecmp(cmdline, "reset", 5) == 0) {
         // erase custom mixer
 #ifdef USE_VTOL
@@ -2371,7 +2379,15 @@ static void cliServoMix(const char *cmdName, char *cmdline)
     int len = strlen(cmdline);
 
     if (len == 0) {
-        printServoMix(DUMP_MASTER, customServoMixers(0), NULL, NULL);
+#ifdef USE_VTOL
+        if (getMixerProfileIndexToUse() != CURRENT_PROFILE_INDEX) {
+            const mixerProfile_t *profile = mixerProfiles(getMixerProfileIndexToUse());
+            printServoMix(DUMP_MASTER, profile->servoMix, NULL, NULL);
+        } else
+#endif
+        {
+            printServoMix(DUMP_MASTER, customServoMixers(0), NULL, NULL);
+        }
     } else if (strncasecmp(cmdline, "reset", 5) == 0) {
         // erase custom mixer
 #ifdef USE_VTOL
@@ -4311,6 +4327,7 @@ static void cliDumpMixerProfile(const char *cmdName, uint8_t mpIndex, dumpFlags_
 
     cliPrintLinefeed();
     cliPrintLinef("mixer_profile %d", mpIndex);
+    cliPrintLine("mmix reset");
 
     // dump motor mix for this profile
     const mixerProfile_t *profile = mixerProfiles(mpIndex);
@@ -4332,6 +4349,7 @@ static void cliDumpMixerProfile(const char *cmdName, uint8_t mpIndex, dumpFlags_
     }
 
     // dump servo mix for this profile
+    cliPrintLine("smix reset");
     const char *smixFormat = "smix %d %d %d %d %d %d %d %d";
     for (uint32_t i = 0; i < MAX_SERVO_RULES; i++) {
         if (profile->servoMix[i].rate == 0) {

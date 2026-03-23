@@ -112,6 +112,9 @@ typedef struct mixerConfig_s {
     uint8_t mixer_linked_rate_profile[2]; // per-profile: 0 = no link, 1-based index
     uint8_t failsafe_mixer_profile; // target profile on failsafe (0 or 1)
     uint8_t failsafe_mixer_action;  // failsafeMixerAction_e
+    int16_t mixer_imu_orientation_roll[2];  // per-profile IMU orientation offset (decidegrees)
+    int16_t mixer_imu_orientation_pitch[2];
+    int16_t mixer_imu_orientation_yaw[2];
 #endif
 } mixerConfig_t;
 

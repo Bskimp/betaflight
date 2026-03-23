@@ -38,6 +38,11 @@
 static bool standardBoardAlignment = true;     // board orientation correction
 static matrix33_t boardRotation;
 
+#ifdef USE_VTOL
+static bool hasVtolRotation = false;
+static matrix33_t vtolRotation;
+#endif
+
 PG_REGISTER_WITH_RESET_TEMPLATE(boardAlignment_t, boardAlignment, PG_BOARD_ALIGNMENT, 1);
 
 #ifndef DEFAULT_ALIGN_BOARD_ROLL
@@ -89,6 +94,12 @@ FAST_CODE_NOINLINE void alignSensorViaMatrix(vector3_t *dest, matrix33_t *sensor
     if (!standardBoardAlignment) {
         alignBoard(dest);
     }
+
+#ifdef USE_VTOL
+    if (hasVtolRotation) {
+        applyRotationMatrix(dest, &vtolRotation);
+    }
+#endif
 }
 
 void alignSensorViaRotation(vector3_t *dest, sensor_align_e rotation)
@@ -142,4 +153,29 @@ void alignSensorViaRotation(vector3_t *dest, sensor_align_e rotation)
     if (!standardBoardAlignment) {
         alignBoard(dest);
     }
+
+#ifdef USE_VTOL
+    if (hasVtolRotation) {
+        applyRotationMatrix(dest, &vtolRotation);
+    }
+#endif
 }
+
+#ifdef USE_VTOL
+void boardAlignmentSetVtolRotation(int16_t rollDeciDegrees, int16_t pitchDeciDegrees, int16_t yawDeciDegrees)
+{
+    if (rollDeciDegrees == 0 && pitchDeciDegrees == 0 && yawDeciDegrees == 0) {
+        hasVtolRotation = false;
+        return;
+    }
+
+    hasVtolRotation = true;
+
+    fp_angles_t rotationAngles;
+    rotationAngles.angles.roll  = DECIDEGREES_TO_RADIANS(rollDeciDegrees);
+    rotationAngles.angles.pitch = DECIDEGREES_TO_RADIANS(pitchDeciDegrees);
+    rotationAngles.angles.yaw   = DECIDEGREES_TO_RADIANS(yawDeciDegrees);
+
+    buildRotationMatrix(&vtolRotation, &rotationAngles);
+}
+#endif

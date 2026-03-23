@@ -305,6 +305,13 @@ void servosInit(void)
         useServo = 1;
     }
 
+#ifdef USE_VTOL
+    // VTOL profiles always need servos regardless of current mixer mode
+    if (mixerConfig()->mixer_profile_count > 1) {
+        useServo = 1;
+    }
+#endif
+
     // give all servos a default command
     for (uint8_t i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
         servo[i] = DEFAULT_SERVO_MIDDLE;
@@ -415,6 +422,14 @@ void writeServos(void)
 #endif // USE_UNCOMMON_MIXERS
 
     default:
+#ifdef USE_VTOL
+        // VTOL profiles need all plane servos regardless of current mixer mode
+        if (mixerConfig()->mixer_profile_count > 1) {
+            for (int i = SERVO_PLANE_INDEX_MIN; i <= SERVO_PLANE_INDEX_MAX; i++) {
+                writeServoWithTracking(servoIndex++, i);
+            }
+        }
+#endif
         break;
     }
 
@@ -601,6 +616,12 @@ static void servoTable(void)
     */
 
     default:
+#ifdef USE_VTOL
+        // VTOL profiles always need servo mixing regardless of mixer mode
+        if (mixerConfig()->mixer_profile_count > 1) {
+            servoMixer();
+        }
+#endif
         break;
     }
 

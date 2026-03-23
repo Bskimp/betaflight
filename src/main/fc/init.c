@@ -527,8 +527,8 @@ void initPhase2(void)
         uint8_t supersetServos = 0;
         mixerProfileGetSuperset(&supersetMotors, &supersetServos);
 
-        // apply profile 0 motor mix into runtime
-        mixerProfileSelect(0);
+        // apply profile 0 motor/servo mix into runtime
+        mixerProfileApplyActive();
 
         // claim the superset motor count for hardware allocation
         if (supersetMotors > getMotorCount()) {
@@ -736,6 +736,12 @@ void initPhase3(void)
         servoDevInit(&servoConfig()->dev);
     }
     servosFilterInit();
+#ifdef USE_VTOL
+    // re-apply mixer profile servo/motor rules after servosInit() loaded from legacy PG
+    if (mixerConfig()->mixer_profile_count > 1) {
+        mixerProfileApplyActive();
+    }
+#endif
 #endif
 
 

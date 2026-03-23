@@ -43,6 +43,8 @@
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/gps_rescue.h"
+#include "flight/mixer.h"
+#include "flight/mixer_profile.h"
 #include "flight/pid.h"
 #include "flight/pid_init.h"
 
