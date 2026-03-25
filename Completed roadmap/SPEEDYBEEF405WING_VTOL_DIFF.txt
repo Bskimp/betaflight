@@ -1,0 +1,247 @@
+# SPEEDYBEEF405WING VTOL Tailsitter Configuration
+# ================================================
+# Profile 0 = Bicopter Hover (MIXER_CUSTOM / PLATFORM_MULTIROTOR)
+# Profile 1 = Airplane Forward Flight (MIXER_CUSTOM_AIRPLANE / PLATFORM_AIRPLANE)
+#
+# BOXMIXERPROFILE switch: OFF = hover, ON = airplane
+#
+# Servo mapping (verified by opening the plane):
+#   SERVO 1 (B00) = servo[2] SERVO_FLAPS     = Elevator (reversed via servo config)
+#   SERVO 2 (B01) = servo[3] SERVO_FLAPPERON_1 = Left aileron
+#   SERVO 3 (C08) = servo[4] SERVO_FLAPPERON_2 = Right aileron
+#   MOTOR 1 (B07) = Left motor
+#   MOTOR 2 (B06) = Right motor
+#
+# NOTE: writeServos() for VTOL maps physical outputs starting at
+# SERVO_PLANE_INDEX_MIN (= SERVO_FLAPS = 2), so smix servo indices
+# must be 2, 3, 4 — NOT 0, 1, 2. Indices 0-1 are gimbal servos
+# and never reach physical pins in the VTOL path.
+
+board_name SPEEDYBEEF405WING
+manufacturer_id SPBE
+
+# ---- Features ----
+feature GPS
+feature LED_STRIP
+feature OSD
+
+# ---- Serial ----
+serial UART3 2 115200 115200 0 115200
+serial UART5 131073 115200 57600 0 115200
+
+# ---- Map ----
+map TAER1234
+
+# ---- VTOL Core Config ----
+set mixer_profile_count = 2
+set mixer_transition_time = 1500
+
+# Link mixer profiles to PID/rate profiles
+# (1-based: 1 = profile 0, 2 = profile 1, 0 = no link)
+set mixer_linked_pid_profile_1 = 1
+set mixer_linked_rate_profile_1 = 1
+set mixer_linked_pid_profile_2 = 2
+set mixer_linked_rate_profile_2 = 2
+
+# Failsafe: snap to hover profile
+set failsafe_mixer_profile = 0
+set failsafe_mixer_action = 0
+
+# Per-profile IMU orientation (decidegrees, applied after board alignment)
+# Hover: +900 pitch = 90 degree nose-up rotation so IMU treats vertical as "level"
+set mixer_imu_orientation_roll_1 = -900
+set mixer_imu_orientation_pitch_1 = 900
+set mixer_imu_orientation_yaw_1 = 0
+# Airplane: no rotation (base board alignment is correct)
+set mixer_imu_orientation_roll_2 = 0
+set mixer_imu_orientation_pitch_2 = 0
+set mixer_imu_orientation_yaw_2 = 0
+
+# ---- Mixer Profile 0: Bicopter Hover (Tailsitter) ----
+# IMU rotation maps body axes to virtual axes:
+#   virtual yaw   = body roll  (ailerons — rotate around vertical/thrust axis)
+#   virtual pitch = body pitch (elevator — tilts nose forward/back)
+#   virtual roll  = -body yaw  (differential thrust — tilts craft left/right in hover)
+mixer_profile 0
+mmix reset
+mmix 0  1.000  0.500  0.000  0.000
+mmix 1  1.000 -0.500  0.000  0.000
+smix reset
+smix 0 3 2  100 0 0 100 0
+smix 1 4 2 -100 0 0 100 0
+smix 2 2 1  100 0 0 100 0
+
+# ---- Mixer Profile 1: Airplane Forward Flight ----
+mixer_profile 1
+mmix reset
+mmix 0  1.000  0.000  0.000  0.400
+mmix 1  1.000  0.000  0.000 -0.400
+smix reset
+smix 0 3 0  100 0 0 100 0
+smix 1 4 0 -100 0 0 100 0
+smix 2 2 1  100 0 0 100 0
+
+# Return to profile 0 for startup
+mixer_profile 0
+
+# ---- Servo Config ----
+servo 2 1000 2000 1500 -100 -1
+
+# ---- AUX Switches ----
+aux 0 0 0 1700 2100 0 0          # ARM
+aux 1 1 1 1225 1625 0 0          # ANGLE
+aux 2 12 1 1700 2100 0 0         # FAILSAFE
+aux 3 13 5 1700 2100 0 0         # LAUNCH
+aux 4 57 3 1700 2100 0 0         # MIXER PROFILE (OFF=hover, ON=airplane)
+
+# ---- Beacon ----
+beacon RX_SET
+
+# ---- Master Settings ----
+set dyn_notch_count = 1
+set dyn_notch_q = 500
+set acc_calibration = -29,67,41,1
+set rc_smoothing_auto_factor = 52
+set motor_idle = 500
+set dshot_bidir = ON
+set motor_pwm_protocol = DSHOT300
+set motor_poles = 12
+set align_board_yaw = 270
+set vbat_max_cell_voltage = 445
+set vbat_min_cell_voltage = 320
+set vbat_warning_cell_voltage = 340
+set beeper_dshot_beacon_tone = 5
+set servo_pwm_rate = 150
+set small_angle = 180
+set gps_sbas_mode = AUTO
+set gps_ublox_use_galileo = ON
+set gps_set_home_point_once = ON
+set gps_use_3d_speed = ON
+set deadband = 5
+set yaw_deadband = 8
+set yaw_type = DIFF_THRUST
+set report_cell_voltage = ON
+set osd_link_quality_pos = 3501
+set osd_rssi_dbm_pos = 3533
+set osd_rsnr_pos = 3565
+set osd_flymode_pos = 3116
+set osd_throttle_pos = 2499
+set osd_current_pos = 2531
+set osd_gps_speed_pos = 2467
+set osd_gps_sats_pos = 2547
+set osd_home_dir_pos = 2553
+set osd_home_dist_pos = 2581
+set osd_flight_dist_pos = 2595
+set osd_warnings_pos = 14931
+set osd_avg_cell_voltage_pos = 2563
+set osd_core_temp_pos = 3597
+set osd_stat_bitmask = 1086734140
+set debug_mode = MIXER_PROFILE
+
+# ---- PID Profile 0: Bicopter Hover ----
+# Adapted from MICOAIR743 hover tune — adjust after bench/flight test
+profile 0
+set dterm_lpf1_dyn_min_hz = 60
+set dterm_lpf1_dyn_max_hz = 120
+set dterm_lpf1_static_hz = 60
+set dterm_lpf2_static_hz = 120
+set anti_gravity_gain = 0
+set iterm_relax = RPY
+set iterm_relax_cutoff = 12
+set throttle_boost = 0
+set p_pitch = 35
+set i_pitch = 50
+set d_pitch = 15
+set p_roll = 60
+set i_roll = 80
+set d_roll = 30
+set p_yaw = 45
+set i_yaw = 15
+set f_yaw = 50
+set s_pitch = 30
+set s_roll = 0
+set s_yaw = 10
+set angle_earth_ref = 0
+set angle_pitch_offset = 0
+set d_max_roll = 0
+set d_max_pitch = 0
+set feedforward_averaging = 2_POINT
+set feedforward_smooth_factor = 45
+set feedforward_jitter_factor = 10
+set simplified_pids_mode = OFF
+set spa_roll_mode = OFF
+set spa_pitch_mode = OFF
+set spa_yaw_mode = OFF
+
+# ---- PID Profile 1: Airplane Forward Flight ----
+# Based on your existing SpeedyBee airplane tune
+profile 1
+set dterm_lpf1_dyn_min_hz = 60
+set dterm_lpf1_dyn_max_hz = 120
+set dterm_lpf1_static_hz = 60
+set dterm_lpf2_static_hz = 120
+set anti_gravity_gain = 0
+set iterm_relax_cutoff = 5
+set throttle_boost = 0
+set p_pitch = 15
+set i_pitch = 25
+set d_pitch = 8
+set p_roll = 10
+set i_roll = 20
+set d_roll = 5
+set p_yaw = 30
+set i_yaw = 0
+set s_pitch = 50
+set s_roll = 50
+set angle_earth_ref = 0
+set d_max_roll = 0
+set d_max_pitch = 0
+set feedforward_averaging = 2_POINT
+set feedforward_smooth_factor = 45
+set feedforward_jitter_factor = 8
+set simplified_pids_mode = OFF
+set simplified_dterm_filter_multiplier = 80
+set tpa_speed_max_voltage = 1260
+set tpa_curve_type = HYPERBOLIC
+set tpa_curve_stall_throttle = 28
+set tpa_curve_pid_thr0 = 170
+set tpa_curve_pid_thr100 = 50
+set tpa_curve_expo = 40
+set spa_roll_mode = I_FREEZE
+set spa_pitch_mode = I_FREEZE
+set spa_yaw_mode = I_FREEZE
+set spa_roll_center = 200
+set spa_roll_width = 70
+set spa_pitch_center = 150
+set spa_pitch_width = 70
+set spa_yaw_center = 150
+set spa_yaw_width = 70
+set angle_pitch_offset = -30
+set wing_launch_throttle = 35
+set wing_launch_climb_time = 6000
+set wing_launch_climb_angle = 15
+set wing_launch_max_tilt = 60
+set wing_launch_stick_override = 50
+
+# ---- Rate Profile 0: Hover Rates ----
+rateprofile 0
+set roll_rc_rate = 5
+set pitch_rc_rate = 5
+set yaw_rc_rate = 4
+set roll_srate = 50
+set pitch_srate = 25
+set yaw_srate = 15
+
+# ---- Rate Profile 1: Airplane Rates ----
+rateprofile 1
+set roll_rc_rate = 5
+set pitch_rc_rate = 5
+set yaw_rc_rate = 4
+set roll_srate = 50
+set pitch_srate = 25
+set yaw_srate = 15
+
+# Restore default profiles for startup
+profile 0
+rateprofile 0
+save

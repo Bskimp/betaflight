@@ -70,8 +70,8 @@ mmix reset
 mmix 0  1.000  0.500  0.000  0.000
 mmix 1  1.000 -0.500  0.000  0.000
 smix reset
-smix 0 3 2 -100 0 0 100 0
-smix 1 4 2  100 0 0 100 0
+smix 0 3 2  100 0 0 100 0
+smix 1 4 2 -100 0 0 100 0
 smix 2 2 1  100 0 0 100 0
 
 # ---- Mixer Profile 1: Airplane Forward Flight ----
@@ -144,19 +144,21 @@ set dterm_lpf1_dyn_max_hz = 120
 set dterm_lpf1_static_hz = 60
 set dterm_lpf2_static_hz = 120
 set anti_gravity_gain = 0
-set iterm_relax_cutoff = 5
+set iterm_relax = RPY
+set iterm_relax_cutoff = 12
 set throttle_boost = 0
 set p_pitch = 35
 set i_pitch = 50
 set d_pitch = 15
-set p_roll = 30
-set i_roll = 45
-set d_roll = 12
-set p_yaw = 75
-set i_yaw = 75
+set p_roll = 60
+set i_roll = 80
+set d_roll = 30
+set p_yaw = 45
+set i_yaw = 15
+set f_yaw = 50
 set s_pitch = 30
 set s_roll = 0
-set s_yaw = 35
+set s_yaw = 10
 set angle_earth_ref = 0
 set angle_pitch_offset = 0
 set d_max_roll = 0
@@ -225,6 +227,7 @@ set roll_expo = 35
 set pitch_expo = 30
 set roll_srate = 50
 set pitch_srate = 25
+set yaw_srate = 15
 
 # ---- Rate Profile 1: Airplane Rates ----
 rateprofile 1
@@ -232,6 +235,7 @@ set roll_expo = 35
 set pitch_expo = 30
 set roll_srate = 50
 set pitch_srate = 25
+set yaw_srate = 15
 
 # Restore default profiles for startup
 profile 0
