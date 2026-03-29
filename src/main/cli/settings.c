@@ -60,9 +60,6 @@
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
-#ifdef USE_VTOL
-#include "flight/mixer_profile.h"
-#endif
 #include "flight/pid.h"
 #include "flight/position.h"
 #include "flight/rpm_filter.h"
@@ -1126,22 +1123,6 @@ const clivalue_t valueTable[] = {
     { "rpm_limit_d",                VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 100 },        PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_d) },
     { "rpm_limit_value",            VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 1, UINT16_MAX }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, rpm_limit_value) },
 #endif
-#ifdef USE_VTOL
-    { PARAM_NAME_MIXER_PROFILE_COUNT, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 1, MAX_MIXER_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_profile_count) },
-    { PARAM_NAME_MIXER_TRANSITION_TIME, VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 10000 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_transition_time) },
-    { "mixer_linked_pid_profile_1", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, PID_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_pid_profile[0]) },
-    { "mixer_linked_pid_profile_2", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, PID_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_pid_profile[1]) },
-    { "mixer_linked_rate_profile_1", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_rate_profile[0]) },
-    { "mixer_linked_rate_profile_2", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_PROFILE_COUNT }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_linked_rate_profile[1]) },
-    { PARAM_NAME_FAILSAFE_MIXER_PROFILE, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, MAX_MIXER_PROFILE_COUNT - 1 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, failsafe_mixer_profile) },
-    { PARAM_NAME_FAILSAFE_MIXER_ACTION, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, FAILSAFE_MIXER_ACTION_COUNT - 1 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, failsafe_mixer_action) },
-    { "mixer_imu_orientation_roll_1",  VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_roll[0]) },
-    { "mixer_imu_orientation_roll_2",  VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_roll[1]) },
-    { "mixer_imu_orientation_pitch_1", VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_pitch[0]) },
-    { "mixer_imu_orientation_pitch_2", VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_pitch[1]) },
-    { "mixer_imu_orientation_yaw_1",   VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_yaw[0]) },
-    { "mixer_imu_orientation_yaw_2",   VAR_INT16 | MASTER_VALUE, .config.minmax = { -1800, 3600 }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, mixer_imu_orientation_yaw[1]) },
-#endif
 
 // PG_MOTOR_3D_CONFIG
     { "3d_deadband_low",            VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { PWM_PULSE_MIN, PWM_RANGE_MIDDLE }, PG_MOTOR_3D_CONFIG, offsetof(flight3DConfig_t, deadband3d_low) },
@@ -1497,14 +1478,14 @@ const clivalue_t valueTable[] = {
 #ifdef USE_WING
     { PARAM_NAME_SPA_ROLL_CENTER,    VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_center[FD_ROLL]) },
     { PARAM_NAME_SPA_ROLL_WIDTH,     VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_width[FD_ROLL]) },
-    { PARAM_NAME_SPA_ROLL_MODE,      VAR_UINT8 | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_ROLL]) },
+    { PARAM_NAME_SPA_ROLL_MODE,      VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_ROLL]) },
     { PARAM_NAME_SPA_PITCH_CENTER,   VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_center[FD_PITCH]) },
     { PARAM_NAME_SPA_PITCH_WIDTH,    VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_width[FD_PITCH]) },
-    { PARAM_NAME_SPA_PITCH_MODE,     VAR_UINT8 | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_PITCH]) },
+    { PARAM_NAME_SPA_PITCH_MODE,     VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_PITCH]) },
     { PARAM_NAME_SPA_YAW_CENTER,     VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_center[FD_YAW]) },
     { PARAM_NAME_SPA_YAW_WIDTH,      VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_width[FD_YAW]) },
-    { PARAM_NAME_SPA_YAW_MODE,       VAR_UINT8 | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_YAW]) },
-    { PARAM_NAME_YAW_TYPE,           VAR_UINT8 | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_YAW_TYPE }, PG_PID_PROFILE, offsetof(pidProfile_t, yaw_type) },
+    { PARAM_NAME_SPA_YAW_MODE,       VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_YAW]) },
+    { PARAM_NAME_YAW_TYPE,           VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_YAW_TYPE }, PG_PID_PROFILE, offsetof(pidProfile_t, yaw_type) },
     { PARAM_NAME_ANGLE_PITCH_OFFSET, VAR_INT16 | PROFILE_VALUE, .config.minmaxUnsigned = { -ANGLE_PITCH_OFFSET_MAX, ANGLE_PITCH_OFFSET_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, angle_pitch_offset) },
 #endif
 #ifdef USE_WING_LAUNCH

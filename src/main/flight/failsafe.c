@@ -48,7 +48,6 @@
 
 #include "rx/rx.h"
 
-#include "flight/mixer_profile.h"
 #include "flight/pid.h"
 
 /*
@@ -318,9 +317,6 @@ FAST_CODE_NOINLINE void failsafeUpdateState(void)
                 } else {
                     failsafeState.active = true;
                     failsafeState.events++;
-#ifdef USE_VTOL
-                    mixerProfileOnFailsafe();
-#endif
                     switch (failsafeConfig()->failsafe_procedure) {
                         case FAILSAFE_PROCEDURE_AUTO_LANDING:
                             //  Enter Stage 2 with settings for landing mode

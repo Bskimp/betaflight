@@ -128,19 +128,15 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
     case WING_LAUNCH_IDLE:
         if (ARMING_FLAG(ARMED) && !wasArmed) {
             pidResetIterm();
-            if (accelThreshG > 0.0f) {
-                // throw detection enabled — wait for accel spike
-                transitionToState(WING_LAUNCH_DETECTED, currentTimeUs);
-            } else {
-                // arm-trigger mode — start motors immediately
-                transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
-            }
+            // always require throw detection — motors stay idle until accel spike
+            transitionToState(WING_LAUNCH_DETECTED, currentTimeUs);
         }
         wasArmed = ARMING_FLAG(ARMED);
         break;
 
     case WING_LAUNCH_DETECTED:
         motorOutput = idleThrottle;
+        pidResetIterm(); // prevent I-term windup while aircraft is held in hand
         // throttle gate: require pilot to raise throttle before throw detection
         if (!throttleGatePassed) {
             const float throttleGatePwm = PWM_RANGE_MIN + launchThrottle * PWM_RANGE;
@@ -151,9 +147,8 @@ void wingLaunchUpdate(timeUs_t currentTimeUs)
         if (throttleGatePassed && acc.accMagnitude > accelThreshG) {
             transitionToState(WING_LAUNCH_MOTOR_DELAY, currentTimeUs);
         }
-        if (rollAngleDeg > maxTiltDeg || pitchAngleDeg < -maxTiltDeg) {
-            transitionToState(WING_LAUNCH_ABORT, currentTimeUs);
-        }
+        // no tilt abort here — motors are at idle, pilot may hold plane at any angle
+        // tilt safety activates in MOTOR_RAMP and CLIMBING when motors are actually live
         break;
 
     case WING_LAUNCH_MOTOR_DELAY:

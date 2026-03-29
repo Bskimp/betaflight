@@ -67,7 +67,6 @@
 #include "sensors/sensors.h"
 
 #include "mixer.h"
-#include "flight/mixer_profile.h"
 
 #define DYN_LPF_THROTTLE_STEPS             100
 #define DYN_LPF_THROTTLE_UPDATE_DELAY_US  5000 // minimum of 5ms between updates
@@ -865,66 +864,6 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     } else {
         // Apply the mix to motor endpoints
         applyMixToMotors(motorMix, activeMixer);
-
-#ifdef USE_VTOL
-        // Dual-evaluate and blend motor outputs during mixer profile transition
-        if (mixerProfileTransitionInProgress()) {
-            const float progress = mixerProfileTransitionProgress();
-            const bool transitionSwitchActive = IS_RC_MODE_ACTIVE(BOXMIXERTRANSITION);
-
-            const motorMixer_t *fromMix, *toMix;
-            uint8_t fromCount, toCount;
-            mixerProfileGetTransitionMixes(&fromMix, &fromCount, &toMix, &toCount);
-
-            // motor[] currently holds FROM profile outputs — save them
-            float fromMotor[MAX_SUPPORTED_MOTORS];
-            const uint8_t maxCount = MAX(fromCount, toCount);
-            for (int i = 0; i < maxCount; i++) {
-                fromMotor[i] = motor[i];
-            }
-
-            // get transition-only flags for both profiles
-            const uint8_t *fromFlags = mixerProfileGetTransitionOnlyFlags(mixerProfileGetActiveIndex());
-            const uint8_t *toFlags = mixerProfileGetTransitionOnlyFlags(
-                mixerProfileGetActiveIndex() == 0 ? 1 : 0);
-
-            // compute TO profile motor outputs using same PID/throttle inputs
-            for (int i = 0; i < maxCount; i++) {
-                float toOutput;
-                if (i < toCount && toMix[i].throttle != 0.0f) {
-                    float mix =
-                        scaledAxisPidRoll  * toMix[i].roll +
-                        scaledAxisPidPitch * toMix[i].pitch +
-                        scaledAxisPidYaw   * toMix[i].yaw;
-                    toOutput = motorOutputMixSign * mix + throttle * toMix[i].throttle;
-                    toOutput = motorOutputMin + motorOutputRange * toOutput;
-                    toOutput = constrainf(toOutput, motorRangeMin, motorRangeMax);
-                } else {
-                    toOutput = mixerRuntime.disarmMotorOutput;
-                }
-
-                float fromOutput = (i < fromCount) ? fromMotor[i] : mixerRuntime.disarmMotorOutput;
-
-                // gate transition-only motors: disarm unless BOXMIXERTRANSITION is active
-                if (i < fromCount && fromFlags[i] && !transitionSwitchActive) {
-                    fromOutput = mixerRuntime.disarmMotorOutput;
-                }
-                if (i < toCount && toFlags[i] && !transitionSwitchActive) {
-                    toOutput = mixerRuntime.disarmMotorOutput;
-                }
-
-                motor[i] = fromOutput * (1.0f - progress) + toOutput * progress;
-            }
-        } else {
-            // no transition — disarm any transition-only motors in the active profile
-            const uint8_t *flags = mixerProfileGetTransitionOnlyFlags(mixerProfileGetActiveIndex());
-            for (int i = 0; i < mixerRuntime.motorCount; i++) {
-                if (flags[i]) {
-                    motor[i] = mixerRuntime.disarmMotorOutput;
-                }
-            }
-        }
-#endif // USE_VTOL
     }
 }
 

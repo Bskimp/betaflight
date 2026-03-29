@@ -32,6 +32,9 @@ extern "C" {
     #include "flight/imu.h"
     #include "flight/pid.h"
     #include "flight/wing_launch.h"
+
+    #include "sensors/acceleration.h"
+    #include "rx/rx.h"
 }
 
 #include "unittest_macros.h"
@@ -49,6 +52,8 @@ extern "C" {
     uint8_t stateFlags = 0;
 
     attitudeEulerAngles_t attitude;
+    acc_t acc;
+    uint16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
     bool IS_RC_MODE_ACTIVE(boxId_e boxId) {
         if (boxId == BOXAUTOLAUNCH) {
@@ -70,7 +75,7 @@ static void resetTestState(void)
     armingFlags = 0; // start DISARMED
 
     memset(&testProfile, 0, sizeof(testProfile));
-    testProfile.wing_launch_accel_thresh = 25;   // unused now but keep in profile
+    testProfile.wing_launch_accel_thresh = 25;   // 2.5G threshold
     testProfile.wing_launch_motor_delay = 100;
     testProfile.wing_launch_motor_ramp = 500;
     testProfile.wing_launch_throttle = 75;
@@ -81,6 +86,11 @@ static void resetTestState(void)
     testProfile.wing_launch_idle_thr = 0;
 
     memset(&attitude, 0, sizeof(attitude));
+    memset(&acc, 0, sizeof(acc));
+    acc.accMagnitude = 1.0f; // resting at 1G
+
+    memset(rcData, 0, sizeof(rcData));
+    rcData[THROTTLE] = PWM_RANGE_MIN; // throttle low
 
     wingLaunchInit(&testProfile);
 }
@@ -98,10 +108,28 @@ static void simulateArm(void)
     advanceTimeMs(1);
 }
 
-// helper: arm and advance through to CLIMBING state
+// simulate throw: pass throttle gate then trigger accel spike
+static void simulateThrow(void)
+{
+    // pass throttle gate (raise throttle above launch threshold)
+    rcData[THROTTLE] = PWM_RANGE_MIN + (uint16_t)(0.75f * PWM_RANGE) + 10;
+    wingLaunchUpdate(mockTimeUs);
+    advanceTimeMs(1);
+
+    // accel spike above threshold (2.5G)
+    acc.accMagnitude = 3.0f;
+    wingLaunchUpdate(mockTimeUs);
+    advanceTimeMs(1);
+
+    // restore accel to normal
+    acc.accMagnitude = 1.0f;
+}
+
+// helper: arm, throw, and advance through to CLIMBING state
 static void advanceToClimbing(void)
 {
     simulateArm();
+    simulateThrow();
     // now in MOTOR_DELAY — wait through it
     advanceTimeMs(100);
     wingLaunchUpdate(mockTimeUs); // → MOTOR_RAMP
@@ -134,13 +162,37 @@ TEST(WingLaunchTest, NoPitchWhenSwitchOff)
     EXPECT_FLOAT_EQ(wingLaunchGetPitchAngle(), 0.0f);
 }
 
-TEST(WingLaunchTest, ArmTriggersLaunchSequence)
+TEST(WingLaunchTest, ArmEntersThrowDetection)
 {
     resetTestState();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_IDLE);
 
     simulateArm();
+    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
+}
+
+TEST(WingLaunchTest, ThrowTriggersMotorDelay)
+{
+    resetTestState();
+    simulateArm();
+    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
+
+    simulateThrow();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_DELAY);
+}
+
+TEST(WingLaunchTest, ThrottleGateRequired)
+{
+    resetTestState();
+    simulateArm();
+
+    // accel spike without throttle gate should NOT trigger
+    acc.accMagnitude = 3.0f;
+    wingLaunchUpdate(mockTimeUs);
+    advanceTimeMs(1);
+    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
+
+    acc.accMagnitude = 1.0f;
 }
 
 TEST(WingLaunchTest, NoTriggerWithoutSwitch)
@@ -160,8 +212,12 @@ TEST(WingLaunchTest, FullStateSequence)
 {
     resetTestState();
 
-    // arm triggers MOTOR_DELAY
+    // arm enters DETECTED (throw detection)
     simulateArm();
+    EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_DETECTED);
+
+    // throw triggers MOTOR_DELAY
+    simulateThrow();
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_DELAY);
 
     // wait through motor delay (100ms)
@@ -194,6 +250,7 @@ TEST(WingLaunchTest, MotorRampIsLinear)
     resetTestState();
 
     simulateArm();
+    simulateThrow();
     advanceTimeMs(100);
     wingLaunchUpdate(mockTimeUs); // → MOTOR_RAMP
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_RAMP);
@@ -277,8 +334,9 @@ TEST(WingLaunchTest, ThrottleNegativeWhenComplete)
 {
     resetTestState();
 
-    // run full sequence
+    // run full sequence: arm → throw → delay → ramp → climb → transition → complete
     simulateArm();
+    simulateThrow();
     advanceTimeMs(100);
     wingLaunchUpdate(mockTimeUs);
     advanceTimeMs(500);
@@ -313,6 +371,7 @@ TEST(WingLaunchTest, AbortOnRollDuringMotorRamp)
     resetTestState();
 
     simulateArm();
+    simulateThrow();
     advanceTimeMs(100);
     wingLaunchUpdate(mockTimeUs); // → MOTOR_RAMP
     EXPECT_EQ(wingLaunchGetState(), WING_LAUNCH_MOTOR_RAMP);

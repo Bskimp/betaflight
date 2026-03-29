@@ -531,7 +531,6 @@
 #undef USE_RUNAWAY_TAKEOFF
 
 #define USE_WING_LAUNCH
-#define USE_VTOL
 
 #endif // USE_WING
 

@@ -38,7 +38,3 @@ void alignSensorViaMatrix(vector3_t *dest, matrix33_t *rotationMatrix);
 void alignSensorViaRotation(vector3_t *dest, sensor_align_e rotation);
 
 void initBoardAlignment(const boardAlignment_t *boardAlignment);
-
-#ifdef USE_VTOL
-void boardAlignmentSetVtolRotation(int16_t rollDeciDegrees, int16_t pitchDeciDegrees, int16_t yawDeciDegrees);
-#endif
