@@ -103,7 +103,8 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
     { .boxId = BOXLAPTIMERRESET, .boxName = "LAP TIMER RESET", .permanentId = 54},
     { .boxId = BOXCHIRP, .boxName = "CHIRP", .permanentId = 55},
     { .boxId = BOXAUTOPILOT, .boxName = "AUTOPILOT", .permanentId = 56},
-    { .boxId = BOXAUTOLAUNCH, .boxName = "AUTO LAUNCH", .permanentId = 57}
+    { .boxId = BOXAUTOLAUNCH, .boxName = "AUTO LAUNCH", .permanentId = 57},
+    { .boxId = BOXAUTOTRIM, .boxName = "SERVO AUTOTRIM", .permanentId = 58}
 };
 
 // mask of enabled IDs, calculated on startup based on enabled features. boxId_e is used as bit index
@@ -377,6 +378,11 @@ void initActiveBoxIds(void)
 
 #ifdef USE_WING_LAUNCH
     BME(BOXAUTOLAUNCH);
+#endif
+#if defined(USE_SERVOS) && defined(USE_WING)
+    if (isFixedWing()) {
+        BME(BOXAUTOTRIM);
+    }
 #endif
 
 #undef BME

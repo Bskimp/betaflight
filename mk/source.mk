@@ -178,6 +178,7 @@ COMMON_SRC = \
             flight/pos_hold_multirotor.c \
             flight/pos_hold_wing.c \
             flight/rpm_filter.c \
+            flight/servo_autotrim.c \
             flight/servos.c \
             flight/servos_tricopter.c \
             io/serial_4way.c \

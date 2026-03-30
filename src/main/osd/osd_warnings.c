@@ -46,6 +46,7 @@
 #include "fc/runtime_config.h"
 
 #include "flight/failsafe.h"
+#include "flight/servo_autotrim.h"
 #include "flight/gps_rescue.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
@@ -385,6 +386,23 @@ void renderOsdWarning(char *warningText, bool *blinking, uint8_t *displayAttr)
         *blinking = true;
         return;
     }
+
+#if defined(USE_SERVOS) && defined(USE_WING)
+    if (servoAutoTrimIsActive()) {
+        tfp_sprintf(warningText, "AUTOTRIM");
+        *displayAttr = DISPLAYPORT_SEVERITY_INFO;
+        return;
+    }
+    if (servoAutoTrimResultPending()) {
+        if (servoAutoTrimWasApplied()) {
+            tfp_sprintf(warningText, "TRIM SAVED");
+        } else {
+            tfp_sprintf(warningText, "TRIM FAIL");
+        }
+        *displayAttr = DISPLAYPORT_SEVERITY_INFO;
+        return;
+    }
+#endif
 
 #ifdef USE_ADC_INTERNAL
     const int16_t coreTemperature = getCoreTemperatureCelsius();

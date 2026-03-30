@@ -43,6 +43,7 @@
 #include "fc/runtime_config.h"
 
 #include "flight/imu.h"
+#include "flight/servo_autotrim.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
@@ -311,6 +312,10 @@ void servosInit(void)
     }
 
     servoConfigureOutput();
+
+#if defined(USE_WING)
+    servoAutoTrimInit();
+#endif
 }
 
 void servoMixerLoadMix(int index)
@@ -360,6 +365,11 @@ static void filterServos(void);
 void writeServos(void)
 {
     servoTable();
+
+#if defined(USE_WING)
+    servoAutoTrimUpdate();
+#endif
+
     filterServos();
 
     uint8_t servoIndex = 0;

@@ -101,6 +101,8 @@
 
 #include "scheduler/scheduler.h"
 
+#include "flight/servo_autotrim.h"
+
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
 #include "sensors/battery.h"
@@ -522,6 +524,10 @@ void disarm(flightLogDisarmReason_e reason)
 #endif
 
         BEEP_OFF;
+
+#if defined(USE_SERVOS) && defined(USE_WING)
+        servoAutoTrimOnDisarm();
+#endif
 
 #ifdef USE_PERSISTENT_STATS
         if (!crashFlipModeActive) {
