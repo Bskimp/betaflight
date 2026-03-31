@@ -231,14 +231,18 @@ void initActiveBoxIds(void)
 #ifdef USE_POSITION_HOLD
         BME(BOXPOSHOLD);
 #endif
-        BME(BOXHEADFREE);
-        BME(BOXHEADADJ);
-        BME(BOXFPVANGLEMIX);
+        if (!isFixedWing()) {
+            BME(BOXHEADFREE);
+            BME(BOXHEADADJ);
+            BME(BOXFPVANGLEMIX);
+        }
         if (featureIsEnabled(FEATURE_INFLIGHT_ACC_CAL)) {
             BME(BOXCALIB);
         }
 #if defined(USE_ACRO_TRAINER) && defined(USE_ACC)
-        BME(BOXACROTRAINER);
+        if (!isFixedWing()) {
+            BME(BOXACROTRAINER);
+        }
 #endif // USE_ACRO_TRAINER
     }
 
@@ -291,7 +295,7 @@ void initActiveBoxIds(void)
 #ifdef USE_DSHOT
     bool configuredMotorProtocolDshot;
     checkMotorProtocolEnabled(&motorConfig()->dev, &configuredMotorProtocolDshot);
-    if (configuredMotorProtocolDshot) {
+    if (configuredMotorProtocolDshot && !isFixedWing()) {
         BME(BOXCRASHFLIP);
     }
 #endif

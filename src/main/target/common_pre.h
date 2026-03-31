@@ -524,6 +524,10 @@
 #define USE_ADVANCED_TPA
 #endif
 
+#ifndef USE_WING_LAUNCH
+#define USE_WING_LAUNCH
+#endif
+
 #undef USE_YAW_SPIN_RECOVERY
 #undef USE_LAUNCH_CONTROL
 #undef USE_ABSOLUTE_CONTROL
