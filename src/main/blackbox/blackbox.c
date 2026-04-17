@@ -1852,6 +1852,25 @@ static bool blackboxWriteSysinfo(void)
         BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_USE_MAG, "%d",         gpsRescueConfig()->useMag);
 #endif // USE_MAG
 #endif // !USE_WING
+
+#ifdef USE_WING
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_ALLOW_ARMING_WITHOUT_FIX, "%d", gpsRescueConfig()->allowArmingWithoutFix);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_MIN_SATS, "%d",        gpsRescueConfig()->minSats);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_MAX_BANK_ANGLE, "%d",  gpsRescueConfig()->maxBankAngle);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_ORBIT_RADIUS, "%d",    gpsRescueConfig()->orbitRadiusM);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_RETURN_ALT, "%d",      gpsRescueConfig()->returnAltitudeM);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_MIN_LOITER_ALT, "%d",  gpsRescueConfig()->minLoiterAltM);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_CRUISE_THROTTLE, "%d", gpsRescueConfig()->cruiseThrottle);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_MIN_THROTTLE, "%d",    gpsRescueConfig()->minThrottle);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_ABORT_THROTTLE, "%d",  gpsRescueConfig()->abortThrottle);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_NAV_P, "%d",           gpsRescueConfig()->navP);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_ALT_P, "%d",           gpsRescueConfig()->altP);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_MIN_HEADING_SPEED, "%d", gpsRescueConfig()->minHeadingSpeedCmS);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_STALL_SPEED, "%d",    gpsRescueConfig()->stallSpeedCmS);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_MIN_START_DIST, "%d",  gpsRescueConfig()->minStartDistM);
+        BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_GPS_RESCUE_SANITY_CHECKS, "%d",   gpsRescueConfig()->sanityChecks);
+#endif // USE_WING
+
 #endif // USE_GPS_RESCUE
 #endif // USE_GPS
 

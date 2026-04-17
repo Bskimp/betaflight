@@ -27,6 +27,14 @@
 
 #define TASK_GPS_RESCUE_RATE_HZ 100  // in sync with altitude task rate
 
+// must match multirotor enum values for CLI lookup table compatibility
+typedef enum {
+    RESCUE_SANITY_OFF = 0,
+    RESCUE_SANITY_ON,
+    RESCUE_SANITY_FS_ONLY,
+    RESCUE_SANITY_COUNT
+} gpsRescueSanity_e;
+
 extern float gpsRescueAngle[RP_AXIS_COUNT]; // NOTE: ANGLES ARE IN CENTIDEGREES
 
 void gpsRescueInit(void);
@@ -37,5 +45,6 @@ bool gpsRescueIsAvailable(void);
 bool gpsRescueIsDisabled(void);
 bool gpsRescueDisableMag(void);
 float gpsRescueGetImuYawCogGain(void);
+const char *gpsRescueGetPhaseName(void);
 
 #endif // USE_WING

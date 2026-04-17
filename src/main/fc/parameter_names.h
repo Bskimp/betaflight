@@ -296,6 +296,20 @@
 #define PARAM_NAME_GPS_RESCUE_USE_MAG "gps_rescue_use_mag"
 #endif // USE_MAG
 
+#ifdef USE_WING
+#define PARAM_NAME_GPS_RESCUE_MAX_BANK_ANGLE "gps_rescue_max_bank_angle"
+#define PARAM_NAME_GPS_RESCUE_ORBIT_RADIUS "gps_rescue_orbit_radius"
+#define PARAM_NAME_GPS_RESCUE_MIN_LOITER_ALT "gps_rescue_min_loiter_alt"
+#define PARAM_NAME_GPS_RESCUE_CRUISE_THROTTLE "gps_rescue_cruise_throttle"
+#define PARAM_NAME_GPS_RESCUE_MIN_THROTTLE "gps_rescue_min_throttle"
+#define PARAM_NAME_GPS_RESCUE_ABORT_THROTTLE "gps_rescue_abort_throttle"
+#define PARAM_NAME_GPS_RESCUE_NAV_P "gps_rescue_nav_p"
+#define PARAM_NAME_GPS_RESCUE_ALT_P "gps_rescue_alt_p"
+#define PARAM_NAME_GPS_RESCUE_TURN_COMP "gps_rescue_turn_compensation"
+#define PARAM_NAME_GPS_RESCUE_MIN_HEADING_SPEED "gps_rescue_min_heading_speed"
+#define PARAM_NAME_GPS_RESCUE_STALL_SPEED "gps_rescue_stall_speed"
+#endif // USE_WING
+
 #endif // USE_GPS_RESCUE
 
 #ifdef USE_GPS_LAP_TIMER

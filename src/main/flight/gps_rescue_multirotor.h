@@ -57,5 +57,6 @@ bool gpsRescueIsAvailable(void);
 bool gpsRescueIsDisabled(void);
 bool gpsRescueDisableMag(void);
 float gpsRescueGetImuYawCogGain(void);
+const char *gpsRescueGetPhaseName(void);
 
 #endif // !USE_WING
