@@ -113,6 +113,7 @@
 #include "msp/msp_protocol_v2_common.h"
 #include "msp/msp_serial.h"
 #include "msp/msp_wing.h"
+#include "msp/msp_wing_launch.h"
 
 #include "osd/osd.h"
 #include "osd/osd_elements.h"
@@ -2767,6 +2768,12 @@ static mspResult_e mspFcProcessOutCommandWithArg(mspDescriptor_t srcDesc, int16_
         break;
 #endif
 
+#ifdef USE_WING_LAUNCH
+    case MSP2_WING_LAUNCH:
+        serializeWingLaunch(dst, currentPidProfile);
+        break;
+#endif
+
     default:
         return MSP_RESULT_CMD_UNKNOWN;
     }
@@ -4349,6 +4356,19 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         pidInitConfig(currentPidProfile);
         initEscEndpoints();
         mixerInitProfile();
+        break;
+#endif
+
+#ifdef USE_WING_LAUNCH
+    case MSP2_SET_WING_LAUNCH:
+        if (!deserializeWingLaunch(src, currentPidProfile)) {
+            return MSP_RESULT_ERROR;
+        }
+        // Launch params are read on wingLaunchInit() which runs at
+        // arm / profile-change. No explicit reinit here — in-flight
+        // config edits aren't a supported scenario for auto-launch,
+        // and resetting the state machine mid-launch would be worse
+        // than letting the new params apply on next arm.
         break;
 #endif
 

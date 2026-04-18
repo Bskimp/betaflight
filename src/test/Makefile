@@ -550,6 +550,14 @@ wing_msp_unittest_SRC := \
 wing_msp_unittest_DEFINES := \
 		USE_WING=
 
+wing_launch_msp_unittest_SRC := \
+		$(USER_DIR)/common/streambuf.c \
+		$(USER_DIR)/msp/msp_wing_launch.c
+
+wing_launch_msp_unittest_DEFINES := \
+		USE_WING= \
+		USE_WING_LAUNCH=
+
 pwl_unittest_SRC := \
 		$(USER_DIR)/common/pwl.c
 

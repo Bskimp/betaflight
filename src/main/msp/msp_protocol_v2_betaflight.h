@@ -38,6 +38,8 @@
 #define MSP2_CLI_SETTING_INFO               0x3011
 #define MSP2_WING_TUNING                    0x3012
 #define MSP2_SET_WING_TUNING                0x3013
+#define MSP2_WING_LAUNCH                    0x3014
+#define MSP2_SET_WING_LAUNCH                0x3015
 
 // MSP2_SET_TEXT and MSP2_GET_TEXT variable types
 #define MSP2TEXT_PILOT_NAME                      1
