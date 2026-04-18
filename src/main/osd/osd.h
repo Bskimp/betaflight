@@ -213,6 +213,7 @@ typedef enum {
     OSD_WING_LAUNCH_STATUS,
 #endif
 
+    OSD_GPS_RESCUE_PHASE,
     OSD_ITEM_COUNT // MUST BE LAST
 } osd_items_e;
 

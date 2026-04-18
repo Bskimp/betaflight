@@ -927,6 +927,22 @@ bool gpsRescueIsDisabled(void)
     return (!STATE(GPS_FIX_HOME));
 }
 
+const char *gpsRescueGetPhaseName(void)
+{
+    switch (rescueState.phase) {
+    case RESCUE_IDLE:       return "IDLE";
+    case RESCUE_INITIALIZE: return "INIT";
+    case RESCUE_ATTAIN_ALT: return "ALT ";
+    case RESCUE_ROTATE:     return "ROT ";
+    case RESCUE_FLY_HOME:   return "FLY ";
+    case RESCUE_DESCENT:    return "DESC";
+    case RESCUE_LANDING:    return "LAND";
+    case RESCUE_DO_NOTHING: return "WAIT";
+    case RESCUE_ABORT:      return "ABRT";
+    default:                return "????";
+    }
+}
+
 #ifdef USE_MAG
 bool gpsRescueDisableMag(void)
 {

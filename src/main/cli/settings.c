@@ -1150,6 +1150,25 @@ const clivalue_t valueTable[] = {
     { PARAM_NAME_GPS_RESCUE_USE_MAG,         VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, useMag) },
 #endif // USE_MAG
 #endif // !USE_WING
+#ifdef USE_WING
+    // PG_GPS_RESCUE (wing)
+    { PARAM_NAME_GPS_RESCUE_MIN_START_DIST,      VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 10, 500 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minStartDistM) },
+    { PARAM_NAME_GPS_RESCUE_RETURN_ALT,          VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 10, 500 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, returnAltitudeM) },
+    { PARAM_NAME_GPS_RESCUE_MIN_LOITER_ALT,      VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 10, 500 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minLoiterAltM) },
+    { PARAM_NAME_GPS_RESCUE_MAX_BANK_ANGLE,      VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 10, 45 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, maxBankAngle) },
+    { PARAM_NAME_GPS_RESCUE_ORBIT_RADIUS,        VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 20, 500 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, orbitRadiusM) },
+    { PARAM_NAME_GPS_RESCUE_CRUISE_THROTTLE,     VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 10, 90 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, cruiseThrottle) },
+    { PARAM_NAME_GPS_RESCUE_MIN_THROTTLE,        VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 10, 80 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minThrottle) },
+    { PARAM_NAME_GPS_RESCUE_ABORT_THROTTLE,      VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 10, 80 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, abortThrottle) },
+    { PARAM_NAME_GPS_RESCUE_NAV_P,               VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 200 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, navP) },
+    { PARAM_NAME_GPS_RESCUE_ALT_P,               VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 200 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, altP) },
+    { PARAM_NAME_GPS_RESCUE_TURN_COMP,           VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 100 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, turnCompensation) },
+    { PARAM_NAME_GPS_RESCUE_MIN_HEADING_SPEED,   VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 100, 1000 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minHeadingSpeedCmS) },
+    { PARAM_NAME_GPS_RESCUE_STALL_SPEED,         VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 50, 1000 },  PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, stallSpeedCmS) },
+    { PARAM_NAME_GPS_RESCUE_SANITY_CHECKS,       VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GPS_RESCUE_SANITY_CHECK }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, sanityChecks) },
+    { PARAM_NAME_GPS_RESCUE_MIN_SATS,            VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 5, 50 },   PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minSats) },
+    { PARAM_NAME_GPS_RESCUE_ALLOW_ARMING_WITHOUT_FIX, VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, allowArmingWithoutFix) },
+#endif // USE_WING
 #endif // USE_GPS_RESCUE
 
 #ifdef USE_GPS_LAP_TIMER

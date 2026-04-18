@@ -26,6 +26,20 @@
 typedef struct gpsRescue_s {
     uint8_t  allowArmingWithoutFix;
     uint8_t  minSats;
+    uint8_t  maxBankAngle;          // degrees, max roll during rescue turns
+    uint16_t orbitRadiusM;          // meters, orbit radius at home
+    uint16_t returnAltitudeM;       // meters, cruise altitude for rescue
+    uint16_t minLoiterAltM;         // meters, minimum safe orbit altitude
+    uint8_t  cruiseThrottle;        // percent, cruise throttle
+    uint8_t  minThrottle;           // percent, stall prevention floor
+    uint8_t  abortThrottle;         // percent, abort/recovery throttle
+    uint8_t  navP;                  // heading P gain
+    uint8_t  altP;                  // altitude P gain
+    uint8_t  turnCompensation;      // percent, nose-up pitch compensation in banked turns (0-100)
+    uint16_t minHeadingSpeedCmS;    // cm/s, min groundspeed for valid heading
+    uint16_t stallSpeedCmS;         // cm/s, groundspeed below which stall is declared (during cruise/orbit only)
+    uint16_t minStartDistM;         // meters, min distance to attempt rescue
+    uint8_t  sanityChecks;          // rescue sanity check mode
 } gpsRescueConfig_t;
 
 PG_DECLARE(gpsRescueConfig_t, gpsRescueConfig);

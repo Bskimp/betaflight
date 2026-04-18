@@ -1245,6 +1245,17 @@ static void osdElementGpsCoordinate(osdElementParms_t *element)
     }
 }
 
+#ifdef USE_GPS_RESCUE
+static void osdElementGpsRescuePhase(osdElementParms_t *element)
+{
+    if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+        strcpy(element->buff, gpsRescueGetPhaseName());
+    } else {
+        strcpy(element->buff, "    ");
+    }
+}
+#endif
+
 static void osdElementGpsSats(osdElementParms_t *element)
 {
     if ((STATE(GPS_FIX) == 0) || (gpsSol.numSat < GPS_MIN_SAT_COUNT) ) {
@@ -2181,6 +2192,9 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
     [OSD_SYS_VTX_TEMP]            = osdElementSys,
     [OSD_SYS_FAN_SPEED]           = osdElementSys,
 #endif
+#ifdef USE_GPS_RESCUE
+    [OSD_GPS_RESCUE_PHASE]        = osdElementGpsRescuePhase,
+#endif
 #ifdef USE_RANGEFINDER
     [OSD_LIDAR_DIST]              = osdElementLidarDist,
 #endif
@@ -2242,6 +2256,9 @@ void osdAddActiveElements(void)
         osdAddActiveElement(OSD_HOME_DIR);
         osdAddActiveElement(OSD_FLIGHT_DIST);
         osdAddActiveElement(OSD_EFFICIENCY);
+#ifdef USE_GPS_RESCUE
+        osdAddActiveElement(OSD_GPS_RESCUE_PHASE);
+#endif
     }
 #endif // GPS
 

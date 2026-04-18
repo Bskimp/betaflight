@@ -28,11 +28,25 @@
 
 #include "gps_rescue.h"
 
-PG_REGISTER_WITH_RESET_TEMPLATE(gpsRescueConfig_t, gpsRescueConfig, PG_GPS_RESCUE, 7);
+PG_REGISTER_WITH_RESET_TEMPLATE(gpsRescueConfig_t, gpsRescueConfig, PG_GPS_RESCUE, 10);
 
 PG_RESET_TEMPLATE(gpsRescueConfig_t, gpsRescueConfig,
     .allowArmingWithoutFix = false,
     .minSats = 8,
+    .maxBankAngle = 25,
+    .orbitRadiusM = 50,
+    .returnAltitudeM = 50,
+    .minLoiterAltM = 25,
+    .cruiseThrottle = 50,
+    .minThrottle = 30,
+    .abortThrottle = 45,
+    .navP = 30,
+    .altP = 30,
+    .turnCompensation = 50,
+    .minHeadingSpeedCmS = 400,
+    .stallSpeedCmS = 200,
+    .minStartDistM = 30,
+    .sanityChecks = 1,
 );
 
 #endif // USE_GPS_RESCUE

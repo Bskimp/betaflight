@@ -174,6 +174,30 @@ flight_failsafe_unittest_DEFINES := \
 		USE_GPS_RESCUE=
 
 
+flight_autopilot_wing_unittest_SRC := \
+		$(USER_DIR)/flight/autopilot_wing.c \
+		$(USER_DIR)/common/maths.c \
+		$(USER_DIR)/common/vector.c \
+		$(USER_DIR)/common/filter.c
+
+flight_autopilot_wing_unittest_DEFINES := \
+		USE_WING= \
+		USE_GPS_RESCUE=
+
+
+flight_gps_rescue_wing_unittest_SRC := \
+		$(USER_DIR)/flight/gps_rescue_wing.c \
+		$(USER_DIR)/flight/autopilot_wing.c \
+		$(USER_DIR)/common/maths.c \
+		$(USER_DIR)/common/vector.c \
+		$(USER_DIR)/common/filter.c
+
+flight_gps_rescue_wing_unittest_DEFINES := \
+		USE_WING= \
+		USE_GPS_RESCUE= \
+		USE_MAG=
+
+
 flight_imu_unittest_SRC := \
 		$(USER_DIR)/common/bitarray.c \
 		$(USER_DIR)/common/maths.c \
