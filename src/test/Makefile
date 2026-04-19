@@ -558,6 +558,14 @@ wing_launch_msp_unittest_DEFINES := \
 		USE_WING= \
 		USE_WING_LAUNCH=
 
+wing_gps_rescue_msp_unittest_SRC := \
+		$(USER_DIR)/common/streambuf.c \
+		$(USER_DIR)/msp/msp_wing_gps_rescue.c
+
+wing_gps_rescue_msp_unittest_DEFINES := \
+		USE_WING= \
+		USE_GPS_RESCUE=
+
 pwl_unittest_SRC := \
 		$(USER_DIR)/common/pwl.c
 

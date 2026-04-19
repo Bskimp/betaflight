@@ -113,6 +113,7 @@
 #include "msp/msp_protocol_v2_common.h"
 #include "msp/msp_serial.h"
 #include "msp/msp_wing.h"
+#include "msp/msp_wing_gps_rescue.h"
 #include "msp/msp_wing_launch.h"
 
 #include "osd/osd.h"
@@ -2774,6 +2775,12 @@ static mspResult_e mspFcProcessOutCommandWithArg(mspDescriptor_t srcDesc, int16_
         break;
 #endif
 
+#if defined(USE_WING) && defined(USE_GPS_RESCUE)
+    case MSP2_WING_GPS_RESCUE:
+        serializeWingGpsRescue(dst, gpsRescueConfig());
+        break;
+#endif
+
     default:
         return MSP_RESULT_CMD_UNKNOWN;
     }
@@ -4369,6 +4376,16 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         // config edits aren't a supported scenario for auto-launch,
         // and resetting the state machine mid-launch would be worse
         // than letting the new params apply on next arm.
+        break;
+#endif
+
+#if defined(USE_WING) && defined(USE_GPS_RESCUE)
+    case MSP2_SET_WING_GPS_RESCUE:
+        if (!deserializeWingGpsRescue(src, gpsRescueConfigMutable())) {
+            return MSP_RESULT_ERROR;
+        }
+        // Rescue params re-read on gpsRescueInit() at arm / mode-entry.
+        // Live edits mid-rescue aren't a supported scenario.
         break;
 #endif
 
