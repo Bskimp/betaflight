@@ -185,6 +185,7 @@ typedef enum tpaSpeedType_e {
 typedef enum {
     YAW_TYPE_RUDDER,
     YAW_TYPE_DIFF_THRUST,
+    YAW_TYPE_COMBINED,
 } yawType_e;
 
 #define MAX_PROFILE_NAME_LENGTH 8u
@@ -320,7 +321,9 @@ typedef struct pidProfile_s {
     uint16_t tpa_speed_adv_thrust;      // For wings when tpa_speed_type = ADVANCED: stationary thrust in grams
     uint16_t tpa_speed_max_voltage;     // For wings: theoretical max voltage; used for throttle scailing with voltage for air speed estimation
     int16_t tpa_speed_pitch_offset;     // For wings: pitch offset in degrees*10 for craft speed estimation
-    uint8_t yaw_type;                   // For wings: type of yaw (rudder or differential thrust)
+    uint8_t yaw_type;                   // For wings: type of yaw (rudder / differential thrust / combined)
+    uint8_t yaw_blend_floor;            // For wings COMBINED: minimum authority each yaw actuator holds (0..100 pct; default 20)
+    uint8_t yaw_blend_crossover;        // For wings COMBINED: airspeed pct where rudder/motor split 50/50 (1..99; default 50)
     int16_t angle_pitch_offset;         // For wings: pitch offset for angle modes; in decidegrees; positive values tilting the wing down
 #ifdef USE_WING_LAUNCH
     uint8_t wing_launch_accel_thresh;   // Throw detection threshold in 0.1G units (25 = 2.5G)
@@ -535,6 +538,18 @@ typedef struct pidRuntime_s {
     tpaSpeedParams_t tpaSpeed;
     float tpaFactorYaw;
     float tpaFactorSterm[XYZ_AXIS_COUNT];
+    // Per-actuator yaw crossfade weights for YAW_TYPE_COMBINED. Both are
+    // 1.0 when yaw_type != COMBINED (no-op). Written by pidUpdateTpaFactor,
+    // read by mixer.c (motor side) + servos.c (servo side).
+    float yawRudderWeight;
+    float yawMotorWeight;
+    // Per-actuator TPA posture correction for COMBINED. Inner PID uses
+    // airspeed-based TPA (matches rudder physics); motor side needs
+    // throttle-based TPA. This ratio (tpaMotor / tpaRudder) converts the
+    // pidSum back to throttle-TPA posture for the motor mixer path.
+    // Clamped to [0.1, 10.0] so a near-zero airspeed TPA can't blow up
+    // motor output. 1.0 for non-COMBINED modes (no-op).
+    float yawMotorTpaCorrection;
 #endif // USE_WING
 
 #ifdef USE_ADVANCED_TPA

@@ -460,6 +460,12 @@ void servoMixer(void)
         input[INPUT_STABILIZED_ROLL] = pidData[FD_ROLL].Sum * PID_SERVO_MIXER_SCALING;
         input[INPUT_STABILIZED_PITCH] = pidData[FD_PITCH].Sum * PID_SERVO_MIXER_SCALING;
         input[INPUT_STABILIZED_YAW] = pidData[FD_YAW].Sum * PID_SERVO_MIXER_SCALING;
+#ifdef USE_WING
+        // YAW_TYPE_COMBINED: rudder servo side gets the airspeed-weighted
+        // portion of the yaw PID sum. weight = 1.0 for RUDDER / DIFF_THRUST
+        // so their behavior is unchanged.
+        input[INPUT_STABILIZED_YAW] *= pidRuntime.yawRudderWeight;
+#endif
 
         // Reverse yaw servo when inverted in 3D mode
         if (featureIsEnabled(FEATURE_3D) && (rcData[THROTTLE] < rxConfig()->midrc)) {
