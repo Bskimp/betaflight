@@ -37,8 +37,10 @@ extern "C" {
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
-// 39-byte golden vector for MSP2_WING_TUNING.
-// See .plan/GOLDEN_VECTOR.md for the pidProfile_t values it encodes.
+// 41-byte golden vector for MSP2_WING_TUNING (V2).
+// V1 was 39 bytes; V2 appends 2 bytes (yaw_blend_floor, yaw_blend_crossover)
+// for YAW_TYPE_COMBINED. The canonical profile leaves both at zero via its
+// memset, so the appended bytes are 0x00 0x00.
 static const uint8_t WING_TUNING_GOLDEN[] = {
     0x1E, 0x28, 0x00, 0x01,        // S[R], S[P], S[Y], yaw_type
     0x88, 0xFF,                    // angle_pitch_offset (-120)
@@ -53,6 +55,7 @@ static const uint8_t WING_TUNING_GOLDEN[] = {
     0x90, 0x01, 0xFA, 0x00, 0x02,  // spa R: center, width, mode
     0x5E, 0x01, 0xC8, 0x00, 0x01,  // spa P
     0x2C, 0x01, 0x96, 0x00, 0x00,  // spa Y
+    0x00, 0x00,                    // V2: yaw_blend_floor, yaw_blend_crossover
 };
 
 // Populate a pidProfile_t with the canonical wing-tuning values.

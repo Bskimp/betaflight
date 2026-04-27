@@ -34,8 +34,9 @@
 
 #include "msp/msp_wing.h"
 
-// 39 bytes. Signed fields: angle_pitch_offset, tpa_speed_pitch_offset,
-// tpa_curve_expo.
+// 41 bytes (V2: V1 39 bytes + 2 bytes yaw_blend fields appended). Signed
+// fields: angle_pitch_offset, tpa_speed_pitch_offset, tpa_curve_expo.
+// Append-only: older configurators ignore trailing bytes.
 void serializeWingTuning(sbuf_t *dst, const pidProfile_t *profile)
 {
     sbufWriteU8(dst, profile->pid[PID_ROLL].S);
@@ -64,6 +65,9 @@ void serializeWingTuning(sbuf_t *dst, const pidProfile_t *profile)
     sbufWriteU16(dst, profile->spa_center[FD_YAW]);
     sbufWriteU16(dst, profile->spa_width[FD_YAW]);
     sbufWriteU8(dst, profile->spa_mode[FD_YAW]);
+    // V2 append: yaw blend config for YAW_TYPE_COMBINED.
+    sbufWriteU8(dst, profile->yaw_blend_floor);
+    sbufWriteU8(dst, profile->yaw_blend_crossover);
 }
 
 // V1 payload is fixed at 39 bytes. Fields appended in a future minor API
@@ -101,6 +105,13 @@ bool deserializeWingTuning(sbuf_t *src, pidProfile_t *profile)
     profile->spa_center[FD_YAW]       = sbufReadU16(src);
     profile->spa_width[FD_YAW]        = sbufReadU16(src);
     profile->spa_mode[FD_YAW]         = sbufReadU8(src);
+    // V2 append: yaw blend config. Guarded so V1 (pre-COMBINED) clients
+    // can still write the older 39-byte payload without triggering the
+    // short-payload bail above.
+    if (sbufBytesRemaining(src) >= 2) {
+        profile->yaw_blend_floor      = sbufReadU8(src);
+        profile->yaw_blend_crossover  = sbufReadU8(src);
+    }
     return true;
 }
 
