@@ -162,6 +162,9 @@
 #ifdef USE_WING_LAUNCH
 #include "flight/wing_launch.h"
 #endif
+#ifdef USE_WING
+#include "flight/autoland.h"
+#endif
 
 #include "io/gps.h"
 #include "io/vtx.h"
@@ -2049,6 +2052,49 @@ static void osdElementWingLaunchStatus(osdElementParms_t *element)
 }
 #endif // USE_WING_LAUNCH
 
+#ifdef USE_WING
+static void osdElementAutolandPhase(osdElementParms_t *element)
+{
+    const autolandPhase_e phase = autolandGetPhase();
+
+    // Hide when autoland isn't running. Keeps the OSD uncluttered
+    // during normal flight.
+    if (phase == AL_IDLE) {
+        element->drawElement = false;
+        return;
+    }
+
+    // Render as "AL:<phase>" during flight phases. AL_ABORT appends
+    // the cause so pilots can read why it bailed in their goggles.
+    if (phase == AL_ABORT) {
+        const char *cause;
+        switch (autolandGetLastAbortCause()) {
+            case AL_ABORT_PILOT:     cause = "PILOT";   break;
+            case AL_ABORT_GPS_LOSS:  cause = "GPS";     break;
+            case AL_ABORT_BARO_LOSS: cause = "BARO";    break;
+            case AL_ABORT_WATCHDOG:  cause = "WDOG";    break;
+            case AL_ABORT_CONFIG:    cause = "CFG";     break;
+            default:                 cause = "?";       break;
+        }
+        tfp_sprintf(element->buff, "AL:ABORT-%s", cause);
+        element->attr = DISPLAYPORT_SEVERITY_CRITICAL;
+        return;
+    }
+
+    tfp_sprintf(element->buff, "AL:%s", autolandPhaseName(phase));
+
+    // AL_FLARE / AL_TOUCHDOWN get a louder attr so pilots know the
+    // commit has happened and abort is no longer possible.
+    if (phase == AL_FLARE || phase == AL_TOUCHDOWN) {
+        element->attr = DISPLAYPORT_SEVERITY_CRITICAL;
+    } else if (phase == AL_COMPLETE) {
+        element->attr = DISPLAYPORT_SEVERITY_INFO;
+    } else {
+        element->attr = DISPLAYPORT_SEVERITY_WARNING;
+    }
+}
+#endif // USE_WING
+
 // Define the mapping between the OSD element id and the function to draw it
 
 const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
@@ -2204,6 +2250,9 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
 #ifdef USE_WING_LAUNCH
     [OSD_WING_LAUNCH_STATUS]     = osdElementWingLaunchStatus,
 #endif
+#ifdef USE_WING
+    [OSD_AUTOLAND_PHASE]         = osdElementAutolandPhase,
+#endif
 };
 
 // Define the mapping between the OSD element id and the function to draw its background (static part)
@@ -2284,6 +2333,10 @@ void osdAddActiveElements(void)
 
 #ifdef USE_WING_LAUNCH
     osdAddActiveElement(OSD_WING_LAUNCH_STATUS);
+#endif
+
+#ifdef USE_WING
+    osdAddActiveElement(OSD_AUTOLAND_PHASE);
 #endif
 }
 

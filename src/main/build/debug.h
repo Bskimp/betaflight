@@ -133,6 +133,7 @@ typedef enum {
     DEBUG_WING_LAUNCH,
     DEBUG_GPS_RESCUE_WING,
     DEBUG_SERVO_AUTOTRIM,
+    DEBUG_AUTOLAND,
     DEBUG_COUNT
 } debugType_e;
 

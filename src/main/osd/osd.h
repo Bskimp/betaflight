@@ -214,6 +214,9 @@ typedef enum {
 #endif
 
     OSD_GPS_RESCUE_PHASE,
+#ifdef USE_WING
+    OSD_AUTOLAND_PHASE,
+#endif
     OSD_ITEM_COUNT // MUST BE LAST
 } osd_items_e;
 

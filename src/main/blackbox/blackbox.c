@@ -63,6 +63,9 @@
 #include "fc/runtime_config.h"
 
 #include "flight/failsafe.h"
+#ifdef USE_WING
+#include "flight/autoland.h"
+#endif
 #include "flight/gps_rescue.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
@@ -333,7 +336,16 @@ static const blackboxSimpleFieldDefinition_t blackboxSlowFields[] = {
 
     {"failsafePhase",         -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)},
     {"rxSignalReceived",      -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)},
-    {"rxFlightChannelsValid", -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)}
+    {"rxFlightChannelsValid", -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)},
+
+#ifdef USE_WING
+    // Autoland phase + last abort cause. Both uint8-sized enums;
+    // logged in the slow frame because they change infrequently.
+    // Post-flight analysis reads these to reconstruct exactly when
+    // / why autoland engaged or bailed.
+    {"autolandPhase",         -1, UNSIGNED, PREDICT(0),      ENCODING(UNSIGNED_VB)},
+    {"autolandAbortCause",    -1, UNSIGNED, PREDICT(0),      ENCODING(UNSIGNED_VB)},
+#endif
 };
 
 typedef enum {
@@ -407,6 +419,10 @@ typedef struct blackboxSlowState_s {
     uint8_t failsafePhase;
     bool rxSignalReceived;
     bool rxFlightChannelsValid;
+#ifdef USE_WING
+    uint8_t autolandPhase;        // autolandPhase_e
+    uint8_t autolandAbortCause;   // autolandAbortCause_e
+#endif
 } __attribute__((__packed__)) blackboxSlowState_t; // We pack this struct so that padding doesn't interfere with memcmp()
 
 //From rc_controls.c
@@ -999,6 +1015,11 @@ static void writeSlowFrame(void)
     values[2] = slowHistory.rxFlightChannelsValid ? 1 : 0;
     blackboxWriteTag2_3S32(values);
 
+#ifdef USE_WING
+    blackboxWriteUnsignedVB(slowHistory.autolandPhase);
+    blackboxWriteUnsignedVB(slowHistory.autolandAbortCause);
+#endif
+
     blackboxSlowFrameIterationTimer = 0;
 }
 
@@ -1012,6 +1033,10 @@ static void loadSlowState(blackboxSlowState_t *slow)
     slow->failsafePhase = failsafePhase();
     slow->rxSignalReceived = isRxReceivingSignal();
     slow->rxFlightChannelsValid = rxAreFlightChannelsValid();
+#ifdef USE_WING
+    slow->autolandPhase      = (uint8_t)autolandGetPhase();
+    slow->autolandAbortCause = (uint8_t)autolandGetLastAbortCause();
+#endif
 }
 
 /**
