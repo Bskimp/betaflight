@@ -6985,6 +6985,12 @@ static void cliDma(const char *cmdName, char* cmdline)
         showDma();
 
         return;
+    } else if (len && strncasecmp(cmdline, "defaults", len) == 0) {
+        backupAndResetConfigs();
+        showDma();
+        restoreConfigs(0);
+
+        return;
     }
 
 #if defined(USE_DMA_SPEC)
@@ -7183,6 +7189,12 @@ static void cliTimer(const char *cmdName, char *cmdline)
         showTimers();
 
         return;
+    } else if (strncasecmp(cmdline, "defaults", len) == 0) {
+        backupAndResetConfigs();
+        showTimers();
+        restoreConfigs(0);
+
+        return;
     }
 
     char *pch = NULL;
@@ -7289,6 +7301,26 @@ static void cliTimer(const char *cmdName, char *cmdline)
 #endif
 
 #if defined(USE_RESOURCE_MGMT)
+static void showResourceDefaults(void)
+{
+    backupAndResetConfigs();
+    for (unsigned int i = 0; i < ARRAYLEN(resourceTable); i++) {
+        const char *owner = getOwnerName(resourceTable[i].owner);
+        const pgRegistry_t *pg = pgFind(resourceTable[i].pgn);
+        const void *cfg = pg->address;
+        for (int index = 0; index < RESOURCE_VALUE_MAX_INDEX(resourceTable[i].maxIndex); index++) {
+            const ioTag_t ioTag = *(ioTag_t *)((const uint8_t *)cfg + resourceTable[i].stride * index + resourceTable[i].offset);
+            if (ioTag) {
+                cliPrintLinef("resource %s %d %c%02d", owner, RESOURCE_INDEX(index),
+                    IO_GPIOPortIdxByTag(ioTag) + 'A', IO_GPIOPinIdxByTag(ioTag));
+            } else {
+                cliPrintLinef("resource %s %d NONE", owner, RESOURCE_INDEX(index));
+            }
+        }
+    }
+    restoreConfigs(0);
+}
+
 static void cliResource(const char *cmdName, char *cmdline)
 {
     char *pch = NULL;
@@ -7297,6 +7329,10 @@ static void cliResource(const char *cmdName, char *cmdline)
     pch = strtok_r(cmdline, " ", &saveptr);
     if (!pch) {
         printResource(DUMP_MASTER | HIDE_UNUSED, NULL);
+
+        return;
+    } else if (strcasecmp(pch, "defaults") == 0) {
+        showResourceDefaults();
 
         return;
     } else if (strcasecmp(pch, "show") == 0) {
@@ -7806,9 +7842,9 @@ const clicmd_t cmdTable[] = {
 
 #ifdef USE_DMA
 #ifdef USE_DMA_SPEC
-    CLI_COMMAND_DEF("dma", "show/set DMA assignments", "<> | <device> <index> list | <device> <index> [<option>|none] | list | show", cliDma),
+    CLI_COMMAND_DEF("dma", "show/set DMA assignments", "<> | <device> <index> list | <device> <index> [<option>|none] | list | show | defaults", cliDma),
 #else
-    CLI_COMMAND_DEF("dma", "show DMA assignments", "show", cliDma),
+    CLI_COMMAND_DEF("dma", "show DMA assignments", "show | defaults", cliDma),
 #endif
 #endif
 
@@ -7881,7 +7917,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("rc_smoothing_info", "show rc_smoothing operational settings", NULL, cliRcSmoothing),
 #endif // USE_RC_SMOOTHING_FILTER
 #ifdef USE_RESOURCE_MGMT
-    CLI_COMMAND_DEF("resource", "show/set resources", "<> | <resource name> <index> [<pin>|none] | show [all]", cliResource),
+    CLI_COMMAND_DEF("resource", "show/set resources", "<> | <resource name> <index> [<pin>|none] | show [all] | defaults", cliResource),
 #endif
     CLI_COMMAND_DEF("rxfail", "show/set rx failsafe settings", NULL, cliRxFailsafe),
     CLI_COMMAND_DEF("rxrange", "configure rx channel ranges", NULL, cliRxRange),
@@ -7919,7 +7955,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("status", "show status", NULL, cliStatus),
     CLI_COMMAND_DEF("tasks", "show task stats", NULL, cliTasks),
 #ifdef USE_TIMER_MGMT
-    CLI_COMMAND_DEF("timer", "show/set timers", "<> | <pin> list | <pin> [af<alternate function>|none|<option(deprecated)>] | list | show", cliTimer),
+    CLI_COMMAND_DEF("timer", "show/set timers", "<> | <pin> list | <pin> [af<alternate function>|none|<option(deprecated)>] | list | show | defaults", cliTimer),
 #endif
     CLI_COMMAND_DEF("version", "show version", NULL, cliVersion),
 #ifdef USE_VTX_CONTROL
