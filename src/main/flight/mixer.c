@@ -55,6 +55,7 @@
 #include "flight/pid.h"
 #include "flight/rpm_filter.h"
 #ifdef USE_WING_LAUNCH
+#include "flight/autoland.h"
 #include "flight/wing_launch.h"
 #endif
 
@@ -714,6 +715,16 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     float scaledAxisPidYaw =
         constrainf(pidData[FD_YAW].Sum, -yawPidSumLimit, yawPidSumLimit) / PID_MIXER_SCALING;
 
+#ifdef USE_WING
+    // YAW_TYPE_COMBINED: motor side gets
+    //   (a) the airspeed-weighted portion of the yaw PID sum (crossfade),
+    //   (b) a throttle-TPA posture correction (inner PID ran airspeed-TPA
+    //       for the rudder side; motor needs throttle-TPA physics).
+    // Both factors collapse to 1.0 for RUDDER / DIFF_THRUST so their
+    // behavior is unchanged.
+    scaledAxisPidYaw *= pidRuntime.yawMotorWeight * pidRuntime.yawMotorTpaCorrection;
+#endif
+
     if (!mixerConfig()->yaw_motors_reversed) {
         scaledAxisPidYaw = -scaledAxisPidYaw;
     }
@@ -801,6 +812,22 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
         const float blend = wingLaunchGetTransitionFactor();
         // blend from launch throttle toward pilot stick during transition
         throttle = launchThrottle + (throttle - launchThrottle) * blend;
+    }
+#endif
+
+#ifdef USE_WING
+    // Autoland pitch-only glide controller throttle override. Pulls the
+    // pilot's stick value out of the loop during the glide sequence --
+    // either forces 0 (cut) or holds cruise_throttle_pct until the wing
+    // drops below throttle_cut_alt_cm (Phase 4). autolandIsActive()
+    // returns false unless a Phase 7 trigger (future) has explicitly
+    // requested entry and the master gate is on, so this is inert in
+    // stock operation.
+    if (autolandIsActive()) {
+        float autolandThrottle;
+        if (autolandGetThrottleOverride(&autolandThrottle)) {
+            throttle = autolandThrottle;
+        }
     }
 #endif
 

@@ -52,6 +52,7 @@
 #include "flight/mixer.h"
 #include "flight/rpm_filter.h"
 #ifdef USE_WING_LAUNCH
+#include "flight/autoland.h"
 #include "flight/wing_launch.h"
 #endif
 
@@ -261,6 +262,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .tpa_speed_max_voltage = 2520,
         .tpa_speed_pitch_offset = 0,
         .yaw_type = YAW_TYPE_RUDDER,
+        .yaw_blend_floor = 20,
+        .yaw_blend_crossover = 50,
         .angle_pitch_offset = 0,
 #ifdef USE_WING_LAUNCH
         .wing_launch_accel_thresh = 25,
@@ -478,13 +481,67 @@ void pidUpdateTpaFactor(float throttle)
 #ifdef USE_WING
     switch (currentPidProfile->yaw_type) {
     case YAW_TYPE_DIFF_THRUST:
+        // Motor-only yaw: throttle-based classic TPA.
         pidRuntime.tpaFactorYaw = getTpaFactorClassic(tpaArgument);
+        break;
+    case YAW_TYPE_COMBINED:
+        // Hybrid: inner PID uses airspeed-based TPA (matches rudder
+        // posture + keeps S-term meaningful for the servo side). Motor
+        // side gets the airspeed TPA posture in the pidSum; crossfade
+        // weights applied in mixer/servos post-hoc. Per-actuator
+        // throttle-TPA correction for the motor side is a v2 refinement.
+        pidRuntime.tpaFactorYaw = pidRuntime.tpaFactor;
         break;
     case YAW_TYPE_RUDDER:
     default:
         pidRuntime.tpaFactorYaw = pidRuntime.tpaFactor;
         break;
     }
+
+#ifdef USE_WING
+    // Pre-compute per-actuator crossfade weights + motor TPA posture
+    // correction for COMBINED mode. Consumed by mixer.c (motor side)
+    // and servos.c (servo side).
+    if (currentPidProfile->yaw_type == YAW_TYPE_COMBINED) {
+        // Piecewise-linear crossfade: rudder reaches 50% authority at
+        // the configured crossover airspeed; linear to each extreme.
+        // Floor keeps both actuators contributing at the edges.
+        const float airspeedNorm = constrainf(tpaArgument, 0.0f, 1.0f);
+        const float xover = constrainf(currentPidProfile->yaw_blend_crossover / 100.0f, 0.01f, 0.99f);
+        const float yawFloor = constrainf(currentPidProfile->yaw_blend_floor / 100.0f, 0.0f, 1.0f);
+        float rudderNorm;
+        if (airspeedNorm <= xover) {
+            rudderNorm = 0.5f * airspeedNorm / xover;
+        } else {
+            rudderNorm = 0.5f + 0.5f * (airspeedNorm - xover) / (1.0f - xover);
+        }
+        pidRuntime.yawRudderWeight = yawFloor + (1.0f - yawFloor) * rudderNorm;
+        pidRuntime.yawMotorWeight = yawFloor + (1.0f - yawFloor) * (1.0f - rudderNorm);
+
+        // Motor TPA posture correction. Inner PID runs with airspeed TPA
+        // (tpaFactorYaw = tpaFactor for COMBINED). The motor side wants
+        // throttle-based TPA, so we rescale its contribution by the ratio.
+        // Matters at flight envelope extremes:
+        //   - High throttle + low airspeed (high-alpha slow flight): ratio
+        //     > 1, motor gets boosted to compensate for weak airspeed TPA
+        //   - Low throttle + high airspeed (deadstick dive): ratio < 1,
+        //     motor attenuated since it has little authority anyway
+        const float tpaRudder = pidRuntime.tpaFactor;
+        const float tpaMotor = getTpaFactorClassic(tpaArgument);
+        if (tpaRudder > 0.05f) {
+            pidRuntime.yawMotorTpaCorrection = constrainf(tpaMotor / tpaRudder, 0.1f, 10.0f);
+        } else {
+            pidRuntime.yawMotorTpaCorrection = 1.0f;
+        }
+    } else {
+        // RUDDER / DIFF_THRUST — weights of 1.0 leave today's behavior
+        // unchanged (pidSum already has the correct TPA posture baked in
+        // via the switch above).
+        pidRuntime.yawRudderWeight = 1.0f;
+        pidRuntime.yawMotorWeight = 1.0f;
+        pidRuntime.yawMotorTpaCorrection = 1.0f;
+    }
+#endif
     updateStermTpaFactors();
 #endif // USE_WING
 }
@@ -600,6 +657,30 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
         angleLimit = 85.0f;
     }
 #endif // USE_WING_LAUNCH
+
+#ifdef USE_WING
+    // Autoland pitch/roll override. Active from AL_ENTRY through
+    // AL_TOUCHDOWN -- pitch holds glide_pitch_deg (flare_pitch_deg
+    // during AL_FLARE), roll is 0 (wings level; Phase 5 will drive
+    // pattern turns). Mirrors the wing-launch gate structure so the
+    // two features coexist cleanly (they can't both be in-progress
+    // at the same time, but the check order doesn't matter).
+    if (autolandIsActive()) {
+        angleFeedforward = 0.0f;
+        if (axis == FD_PITCH) {
+            float autolandPitchDeg;
+            if (autolandGetPitchSetpoint(&autolandPitchDeg)) {
+                angleTarget = -autolandPitchDeg;
+            }
+        } else {
+            float autolandRollDeg;
+            if (autolandGetRollSetpoint(&autolandRollDeg)) {
+                angleTarget = autolandRollDeg;
+            }
+        }
+        angleLimit = 85.0f;
+    }
+#endif // USE_WING
 
 #ifdef USE_GPS_RESCUE
     angleTarget += gpsRescueAngle[axis] / 100.0f; // Angle is in centidegrees, stepped on roll at 10Hz but not on pitch
@@ -1140,6 +1221,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 #endif
 #ifdef USE_WING_LAUNCH
                 || (isWingLaunchInProgress() && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH))
+#endif
+#ifdef USE_WING
+                || autolandIsActive()
 #endif
                 ;
     levelMode_e levelMode;
