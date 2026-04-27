@@ -528,6 +528,21 @@
 #define USE_WING_LAUNCH
 #endif
 
+// LED_STRIP is gated behind TARGET_FLASH_SIZE >= 1024 in common_pre.h
+// (~line 243). F7X2 wings (TMOTORF7) silently miss it, so the resource-
+// name table excludes "LED_STRIP" and CLI rejects the bind. Force-on
+// for every wing target — flash budget is fine.
+//
+// USE_GPS deliberately NOT force-on yet: enabling it on TMOTORF7
+// surfaces compile errors in gps.c (gpsData_t fields removed in a
+// refactor: platformVersion, lastNavSolTs, UBX_VERSION_UNDEF, etc.).
+// F4 wing targets compile fine via the 1MB flash gate, but the F7X2
+// path needs gps.c / gps.h reconciliation before USE_GPS can move
+// into the USE_WING force-on list. Tracked separately.
+#ifndef USE_LED_STRIP
+#define USE_LED_STRIP
+#endif
+
 #undef USE_YAW_SPIN_RECOVERY
 #undef USE_LAUNCH_CONTROL
 #undef USE_ABSOLUTE_CONTROL
