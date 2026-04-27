@@ -97,6 +97,7 @@
 #include "pg/motor.h"
 #include "pg/msp.h"
 #include "pg/pg.h"
+#include "pg/autoland.h"
 #include "pg/pg_ids.h"
 #include "pg/pilot.h"
 #include "pg/pinio.h"
@@ -561,7 +562,7 @@ const char* const lookupTableTpaSpeedType[] = {
 };
 
 const char* const lookupTableYawType[] = {
-    "RUDDER", "DIFF_THRUST",
+    "RUDDER", "DIFF_THRUST", "COMBINED",
 };
 #endif // USE_WING
 
@@ -1171,6 +1172,30 @@ const clivalue_t valueTable[] = {
 #endif // USE_WING
 #endif // USE_GPS_RESCUE
 
+#ifdef USE_WING
+    { PARAM_NAME_WING_AUTOLAND_ENABLED,              VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, enabled) },
+    { PARAM_NAME_WING_AUTOLAND_TRIGGER_MANUAL,       VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, trigger_manual) },
+    { PARAM_NAME_WING_AUTOLAND_TRIGGER_RTH_TIMEOUT,  VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, trigger_rth_timeout) },
+    { PARAM_NAME_WING_AUTOLAND_TRIGGER_LOW_BATT,     VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, trigger_low_batt) },
+    { PARAM_NAME_WING_AUTOLAND_TRIGGER_FAILSAFE,     VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, trigger_failsafe) },
+    { PARAM_NAME_WING_AUTOLAND_LOITER_TIMEOUT,       VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 10, 600 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, loiter_timeout_s) },
+    { PARAM_NAME_WING_AUTOLAND_ORBITS_BEFORE_DESCENT, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 1, 5 },      PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, orbits_before_descent) },
+    { PARAM_NAME_WING_AUTOLAND_APPROACH_ALTITUDE,    VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 20, 300 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, approach_altitude_m) },
+    { PARAM_NAME_WING_AUTOLAND_DOWNWIND_DISTANCE,    VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 30, 500 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, downwind_distance_m) },
+    { PARAM_NAME_WING_AUTOLAND_BASE_RADIUS,          VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 10, 200 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, base_radius_m) },
+    { PARAM_NAME_WING_AUTOLAND_FINAL_DISTANCE,       VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 20, 300 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, final_distance_m) },
+    { PARAM_NAME_WING_AUTOLAND_COMMIT_ALTITUDE,      VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 100, 2000 }, PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, commit_altitude_cm) },
+    { PARAM_NAME_WING_AUTOLAND_GLIDE_PITCH,          VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 20 },     PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, glide_pitch_deg) },
+    { PARAM_NAME_WING_AUTOLAND_THROTTLE_CUT_ALT,     VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 5000 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, throttle_cut_alt_cm) },
+    { PARAM_NAME_WING_AUTOLAND_CRUISE_THROTTLE,      VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 100 },    PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, cruise_throttle_pct) },
+    { PARAM_NAME_WING_AUTOLAND_FLARE_START_ALT,      VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 30, 1000 },  PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, flare_start_alt_cm) },
+    { PARAM_NAME_WING_AUTOLAND_FLARE_PITCH,          VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 30 },     PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, flare_pitch_deg) },
+    { PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_ACCEL,      VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 10, 100 },   PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, touchdown_accel_threshold) },
+    { PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_ALT,        VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 300 },    PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, touchdown_alt_threshold_cm) },
+    { PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_QUIESCENCE, VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 500, 10000 },PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, touchdown_quiescence_ms) },
+    { PARAM_NAME_WING_AUTOLAND_MIN_SATS,             VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 5, 50 },     PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, min_pattern_sats) },
+#endif // USE_WING
+
 #ifdef USE_GPS_LAP_TIMER
     { PARAM_NAME_GPS_LAP_TIMER_GATE_LAT,       VAR_INT32  | MASTER_VALUE, .config.d32Max = 900000000,           PG_GPS_LAP_TIMER, offsetof(gpsLapTimerConfig_t, gateLat) },
     { PARAM_NAME_GPS_LAP_TIMER_GATE_LON,       VAR_INT32  | MASTER_VALUE, .config.d32Max = 1800000000,          PG_GPS_LAP_TIMER, offsetof(gpsLapTimerConfig_t, gateLon) },
@@ -1423,6 +1448,8 @@ const clivalue_t valueTable[] = {
     { PARAM_NAME_SPA_YAW_WIDTH,      VAR_UINT16  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_width[FD_YAW]) },
     { PARAM_NAME_SPA_YAW_MODE,       VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_SPA_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, spa_mode[FD_YAW]) },
     { PARAM_NAME_YAW_TYPE,           VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_YAW_TYPE }, PG_PID_PROFILE, offsetof(pidProfile_t, yaw_type) },
+    { PARAM_NAME_YAW_BLEND_FLOOR,    VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, yaw_blend_floor) },
+    { PARAM_NAME_YAW_BLEND_CROSSOVER, VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 1, 99 }, PG_PID_PROFILE, offsetof(pidProfile_t, yaw_blend_crossover) },
     { PARAM_NAME_ANGLE_PITCH_OFFSET, VAR_INT16 | PROFILE_VALUE, .config.minmaxUnsigned = { -ANGLE_PITCH_OFFSET_MAX, ANGLE_PITCH_OFFSET_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, angle_pitch_offset) },
 #endif
 #ifdef USE_WING_LAUNCH

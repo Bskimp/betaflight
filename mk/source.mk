@@ -2,6 +2,7 @@ PG_SRC = \
             pg/adc.c \
             pg/alt_hold_multirotor.c \
             pg/alt_hold_wing.c \
+            pg/autoland.c \
             pg/autopilot.c \
             pg/beeper.c \
             pg/beeper_dev.c \
@@ -138,6 +139,7 @@ COMMON_SRC = \
             msp/msp_build_info.c \
             msp/msp_serial.c \
             msp/msp_wing.c \
+            msp/msp_wing_autoland.c \
             msp/msp_wing_gps_rescue.c \
             msp/msp_wing_launch.c \
             scheduler/scheduler.c \
@@ -166,8 +168,12 @@ COMMON_SRC = \
             flight/dyn_notch_filter.c \
             flight/wing_launch.c \
             flight/failsafe.c \
+            flight/autoland.c \
+            flight/autoland_task.c \
             flight/gps_rescue_multirotor.c \
             flight/gps_rescue_wing.c \
+            flight/nav_geom.c \
+            flight/nav_wind.c \
             flight/imu.c \
             flight/mixer.c \
             flight/mixer_init.c \

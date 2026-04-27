@@ -577,6 +577,27 @@ wing_launch_unittest_DEFINES := \
 		USE_WING= \
 		USE_WING_LAUNCH=
 
+nav_wind_unittest_SRC := \
+		$(USER_DIR)/flight/nav_wind.c \
+		$(USER_DIR)/common/maths.c
+
+nav_wind_unittest_DEFINES :=
+
+nav_geom_unittest_SRC := \
+		$(USER_DIR)/flight/nav_geom.c \
+		$(USER_DIR)/common/maths.c
+
+nav_geom_unittest_DEFINES :=
+
+autoland_unittest_SRC := \
+		$(USER_DIR)/flight/autoland.c \
+		$(USER_DIR)/flight/nav_geom.c \
+		$(USER_DIR)/flight/nav_wind.c \
+		$(USER_DIR)/common/maths.c
+
+autoland_unittest_DEFINES := \
+		USE_WING=
+
 # Please tweak the following variable definitions as needed by your
 # project, except GTEST_HEADERS, which you can use in your own targets
 # but shouldn't modify.

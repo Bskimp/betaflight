@@ -42,6 +42,9 @@
 #define MSP2_SET_WING_LAUNCH                0x3015
 #define MSP2_WING_GPS_RESCUE                0x3016
 #define MSP2_SET_WING_GPS_RESCUE            0x3017
+#define MSP2_WING_AUTOLAND                  0x3018
+#define MSP2_SET_WING_AUTOLAND              0x3019
+#define MSP2_WING_AUTOLAND_STATE            0x301A
 
 // MSP2_SET_TEXT and MSP2_GET_TEXT variable types
 #define MSP2TEXT_PILOT_NAME                      1

@@ -113,6 +113,7 @@
 #include "msp/msp_protocol_v2_common.h"
 #include "msp/msp_serial.h"
 #include "msp/msp_wing.h"
+#include "msp/msp_wing_autoland.h"
 #include "msp/msp_wing_gps_rescue.h"
 #include "msp/msp_wing_launch.h"
 
@@ -2781,6 +2782,12 @@ static mspResult_e mspFcProcessOutCommandWithArg(mspDescriptor_t srcDesc, int16_
         break;
 #endif
 
+#ifdef USE_WING
+    case MSP2_WING_AUTOLAND:
+        serializeWingAutoland(dst, wingAutolandConfig());
+        break;
+#endif
+
     default:
         return MSP_RESULT_CMD_UNKNOWN;
     }
@@ -4386,6 +4393,16 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         }
         // Rescue params re-read on gpsRescueInit() at arm / mode-entry.
         // Live edits mid-rescue aren't a supported scenario.
+        break;
+#endif
+
+#ifdef USE_WING
+    case MSP2_SET_WING_AUTOLAND:
+        if (!deserializeWingAutoland(src, wingAutolandConfigMutable())) {
+            return MSP_RESULT_ERROR;
+        }
+        // Autoland params are read at AL_ENTRY / state transitions.
+        // Phase 0: state machine not built yet, so no reinit needed.
         break;
 #endif
 

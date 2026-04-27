@@ -73,6 +73,8 @@
 #define PARAM_NAME_TPA_SPEED_MAX_VOLTAGE "tpa_speed_max_voltage"
 #define PARAM_NAME_TPA_SPEED_PITCH_OFFSET "tpa_speed_pitch_offset"
 #define PARAM_NAME_YAW_TYPE "yaw_type"
+#define PARAM_NAME_YAW_BLEND_FLOOR "yaw_blend_floor"
+#define PARAM_NAME_YAW_BLEND_CROSSOVER "yaw_blend_crossover"
 #define PARAM_NAME_MIXER_TYPE "mixer_type"
 #define PARAM_NAME_EZ_LANDING_THRESHOLD "ez_landing_threshold"
 #define PARAM_NAME_EZ_LANDING_LIMIT "ez_landing_limit"
@@ -321,6 +323,30 @@
 #endif // USE_WING
 
 #endif // USE_GPS_RESCUE
+
+#ifdef USE_WING
+#define PARAM_NAME_WING_AUTOLAND_ENABLED "wing_autoland_enabled"
+#define PARAM_NAME_WING_AUTOLAND_TRIGGER_MANUAL "wing_autoland_trigger_manual"
+#define PARAM_NAME_WING_AUTOLAND_TRIGGER_RTH_TIMEOUT "wing_autoland_trigger_rth_timeout"
+#define PARAM_NAME_WING_AUTOLAND_TRIGGER_LOW_BATT "wing_autoland_trigger_low_batt"
+#define PARAM_NAME_WING_AUTOLAND_TRIGGER_FAILSAFE "wing_autoland_trigger_failsafe"
+#define PARAM_NAME_WING_AUTOLAND_LOITER_TIMEOUT "wing_autoland_loiter_timeout"
+#define PARAM_NAME_WING_AUTOLAND_ORBITS_BEFORE_DESCENT "wing_autoland_orbits_before_descent"
+#define PARAM_NAME_WING_AUTOLAND_APPROACH_ALTITUDE "wing_autoland_approach_altitude"
+#define PARAM_NAME_WING_AUTOLAND_DOWNWIND_DISTANCE "wing_autoland_downwind_distance"
+#define PARAM_NAME_WING_AUTOLAND_BASE_RADIUS "wing_autoland_base_radius"
+#define PARAM_NAME_WING_AUTOLAND_FINAL_DISTANCE "wing_autoland_final_distance"
+#define PARAM_NAME_WING_AUTOLAND_COMMIT_ALTITUDE "wing_autoland_commit_altitude"
+#define PARAM_NAME_WING_AUTOLAND_GLIDE_PITCH "wing_autoland_glide_pitch"
+#define PARAM_NAME_WING_AUTOLAND_THROTTLE_CUT_ALT "wing_autoland_throttle_cut_alt"
+#define PARAM_NAME_WING_AUTOLAND_CRUISE_THROTTLE "wing_autoland_cruise_throttle"
+#define PARAM_NAME_WING_AUTOLAND_FLARE_START_ALT "wing_autoland_flare_start_alt"
+#define PARAM_NAME_WING_AUTOLAND_FLARE_PITCH "wing_autoland_flare_pitch"
+#define PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_ACCEL "wing_autoland_touchdown_accel"
+#define PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_ALT "wing_autoland_touchdown_alt"
+#define PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_QUIESCENCE "wing_autoland_touchdown_quiescence"
+#define PARAM_NAME_WING_AUTOLAND_MIN_SATS "wing_autoland_min_sats"
+#endif // USE_WING
 
 #ifdef USE_GPS_LAP_TIMER
 #define PARAM_NAME_GPS_LAP_TIMER_GATE_LAT "gps_lap_timer_gate_lat"
