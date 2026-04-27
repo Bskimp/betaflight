@@ -85,6 +85,7 @@ typedef enum {
     BOXLAPTIMERRESET,
     BOXAUTOLAUNCH,
     BOXAUTOTRIM,
+    BOXAUTOLAND,
     CHECKBOX_ITEM_COUNT
 } boxId_e;
 

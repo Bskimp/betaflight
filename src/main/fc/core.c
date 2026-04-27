@@ -75,6 +75,8 @@
 #include "flight/rpm_filter.h"
 #include "flight/servos.h"
 #ifdef USE_WING_LAUNCH
+#include "flight/autoland.h"
+#include "flight/autoland_task.h"
 #include "flight/wing_launch.h"
 #endif
 
@@ -618,6 +620,12 @@ if (isMotorProtocolDshot()) {
 #endif
         ENABLE_ARMING_FLAG(ARMED);  // ***ARM NOW ***
 
+#ifdef USE_WING
+        // Reset autoland state machine to IDLE + clear arm-session
+        // lock so this arm can run autoland if triggered (invariant #8).
+        autolandOnArm();
+#endif
+
 #ifdef USE_RC_STATS
         NotifyRcStatsArming();
 #endif
@@ -961,6 +969,12 @@ bool processRx(timeUs_t currentTimeUs)
     }
 #endif
 
+#ifdef USE_WING
+    if (ARMING_FLAG(ARMED)) {
+        autolandTaskTick(currentTimeUs);
+    }
+#endif
+
     return true;
 }
 
@@ -1052,6 +1066,9 @@ void processRxModes(timeUs_t currentTimeUs)
 #endif
 #ifdef USE_WING_LAUNCH
         || (isWingLaunchInProgress() && IS_RC_MODE_ACTIVE(BOXAUTOLAUNCH))
+#endif
+#ifdef USE_WING
+        || autolandIsActive()
 #endif
         ) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
