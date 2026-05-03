@@ -71,6 +71,12 @@ ifeq ($(strip $(MANUFACTURER_ID)),BRFP)
 BRAINFPV_BL = yes
 endif
 
+# Extract BOARD_NAME so platform makefiles can discriminate between sibling
+# BrainFPV targets (e.g. RADIX 2 HD = XIP from QSPI, RADIX 2 = RAM-copy EXST).
+# Lowercased for use as the brainfpv_fw_packer --dev argument.
+BOARD_NAME := $(call pp_def_value,$(CONFIG_HEADER_FILE),BOARD_NAME)
+BRAINFPV_PACKER_DEVICE := $(shell echo $(BOARD_NAME) | tr '[:upper:]' '[:lower:]')
+
 else #exists
 $(error `$(CONFIG_HEADER_FILE)` not found. Have you hydrated configuration using: 'make configs'?)
 endif #CONFIG_HEADER_FILE exists

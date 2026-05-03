@@ -30,11 +30,11 @@ $(BRAINFPV_PACKER_SCRIPT):
 	fi
 
 $(TARGET_PACKED_BIN): $(TARGET_HEX) $(BRAINFPV_PACKER_SCRIPT)
-	@echo "Packing $(TARGET_HEX) for BrainFPV bootloader -> $(TARGET_PACKED_BIN)" "$(STDOUT)"
+	@echo "Packing $(TARGET_HEX) for BrainFPV bootloader (--dev $(BRAINFPV_PACKER_DEVICE)) -> $(TARGET_PACKED_BIN)" "$(STDOUT)"
 	$(V1) $(PYTHON) $(BRAINFPV_PACKER_SCRIPT) \
 	    --name "Betaflight" \
 	    --version $(FC_VER) \
-	    --dev radix2hd \
+	    --dev $(BRAINFPV_PACKER_DEVICE) \
 	    --t firmware \
 	    --boot $(EXST_ADJUST_VMA) \
 	    --zip \

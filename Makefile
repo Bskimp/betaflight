@@ -483,18 +483,19 @@ $(TARGET_DFU): $(TARGET_HEX)
 
 else
 ifeq ($(BRAINFPV_BL),yes)
-# BrainFPV XIP build — flat .bin from .elf, no .exst_hash, no MD5 patching.
-# Firmware-image validation is via the .bl_header_section magic placed by
-# the linker. The brainfpv_fw_packer post-link step (mk/brainfpv_pack.mk,
-# wired in separately) wraps this flat .bin in the BrainFPV-format file
-# the bootloader accepts via drag-and-drop.
+# BrainFPV bootloader build — flat .bin from .elf, no .exst_hash patching,
+# no SPRACING-style MD5 hash. Firmware-image validation is handled either
+# by an embedded .bl_header_section magic (HD: XIP from QSPI) or by the
+# packer's own envelope (RADIX 2: RAM-copy with needs_header=true). The
+# brainfpv_fw_packer post-link step (mk/brainfpv_pack.mk) wraps this flat
+# .bin into the format the bootloader accepts via drag-and-drop.
 $(TARGET_BIN): $(TARGET_ELF)
-	@echo "Creating BrainFPV XIP BIN $(TARGET_BIN)" "$(STDOUT)"
+	@echo "Creating BrainFPV BIN $(TARGET_BIN)" "$(STDOUT)"
 	$(V1) $(OBJCOPY) -O binary $< $@
 
 $(TARGET_HEX): $(TARGET_BIN)
 	$(if $(EXST_ADJUST_VMA),,$(error "EXST_ADJUST_VMA not specified"))
-	@echo "Creating BrainFPV XIP HEX from $(TARGET_BIN), VMA Adjust $(EXST_ADJUST_VMA)" "$(STDOUT)"
+	@echo "Creating BrainFPV HEX from $(TARGET_BIN), VMA Adjust $(EXST_ADJUST_VMA)" "$(STDOUT)"
 	$(V1) $(OBJCOPY) -I binary -O ihex --adjust-vma=$(EXST_ADJUST_VMA) $(TARGET_BIN) $@
 
 else
