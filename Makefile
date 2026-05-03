@@ -482,6 +482,22 @@ $(TARGET_DFU): $(TARGET_HEX)
 	$(V1) $(PYTHON) $(DFUSE-PACK) -i $< $@
 
 else
+ifeq ($(BRAINFPV_BL),yes)
+# BrainFPV XIP build — flat .bin from .elf, no .exst_hash, no MD5 patching.
+# Firmware-image validation is via the .bl_header_section magic placed by
+# the linker. The brainfpv_fw_packer post-link step (mk/brainfpv_pack.mk,
+# wired in separately) wraps this flat .bin in the BrainFPV-format file
+# the bootloader accepts via drag-and-drop.
+$(TARGET_BIN): $(TARGET_ELF)
+	@echo "Creating BrainFPV XIP BIN $(TARGET_BIN)" "$(STDOUT)"
+	$(V1) $(OBJCOPY) -O binary $< $@
+
+$(TARGET_HEX): $(TARGET_BIN)
+	$(if $(EXST_ADJUST_VMA),,$(error "EXST_ADJUST_VMA not specified"))
+	@echo "Creating BrainFPV XIP HEX from $(TARGET_BIN), VMA Adjust $(EXST_ADJUST_VMA)" "$(STDOUT)"
+	$(V1) $(OBJCOPY) -I binary -O ihex --adjust-vma=$(EXST_ADJUST_VMA) $(TARGET_BIN) $@
+
+else
 $(TARGET_UNPATCHED_BIN): $(TARGET_ELF)
 	@echo "Creating BIN (without checksum) $(TARGET_UNPATCHED_BIN)" "$(STDOUT)"
 	$(V1) $(OBJCOPY) -O binary $< $@
@@ -524,6 +540,14 @@ $(TARGET_HEX): $(TARGET_BIN)
 	@echo "Creating EXST HEX from patched EXST BIN $(TARGET_BIN), VMA Adjust $(EXST_ADJUST_VMA)" "$(STDOUT)"
 	$(V1) $(OBJCOPY) -I binary -O ihex --adjust-vma=$(EXST_ADJUST_VMA) $(TARGET_BIN) $@
 
+endif # BRAINFPV_BL vs SPRACING-style EXST branch
+endif
+
+# BrainFPV firmware packer integration: when building for a BrainFPV target,
+# pull in the post-link `pack` rule that wraps TARGET_HEX into the format
+# the bootloader accepts via drag-and-drop.
+ifeq ($(BRAINFPV_BL),yes)
+include $(MAKE_SCRIPT_DIR)/brainfpv_pack.mk
 endif
 
 $(TARGET_ELF): $(TARGET_OBJS) $(LD_SCRIPT) $(LD_SCRIPTS)

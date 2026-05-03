@@ -40,13 +40,21 @@ ENV LANG=en_US.UTF-8 \
 # Install betaflight specific development tools
 # libblocksruntime-dev --> blocks library
 # python3-intelhex --> required to convert .hex files to .dfu files
+# python3-pyelftools --> required by brainfpv_fw_packer (BrainFPV BL targets)
+# python3-pip --> needed to install pycrc (no Debian package available)
 # dfu-util --> required for dfu flashing
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3-intelhex \
+    python3-pyelftools \
+    python3-pip \
     dfu-util \
     libblocksruntime-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# pycrc has no Debian package; install via pip. Required by brainfpv_fw_packer
+# (BrainFPV bootloader targets like RADIX 2 HD).
+RUN pip install --break-system-packages --no-cache-dir pycrc
 
 # Install clang-18 - version purposefully held back for stability
 RUN apt-get update && \

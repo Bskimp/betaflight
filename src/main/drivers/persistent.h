@@ -37,6 +37,12 @@ typedef enum {
 #endif
     PERSISTENT_OBJECT_RTC_HIGH,           // high 32 bits of rtcTime_t
     PERSISTENT_OBJECT_RTC_LOW,            // low 32 bits of rtcTime_t
+#ifdef USE_BRAINFPV_BL
+    // BrainFPV bootloader reads RTC_BKP_DR6 to decide DFU-vs-jump on next boot.
+    // Must remain at enum slot 6 (between RTC_LOW and SERIALRX_BAUD) to match
+    // the closed-source bootloader's hardcoded read location.
+    PERSISTENT_OBJECT_BRAINFPV_BL,
+#endif
     PERSISTENT_OBJECT_SERIALRX_BAUD,      // serial rx baudrate
 #ifdef USE_SPRACING_PERSISTENT_RTC_WORKAROUND
     // On SPRACING H7 firmware use this alternate location for all reset reasons interpreted by this firmware

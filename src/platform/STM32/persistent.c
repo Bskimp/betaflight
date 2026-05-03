@@ -58,6 +58,17 @@ void persistentObjectWrite(persistentObjectId_e id, uint32_t value)
         HAL_RTCEx_BKUPWrite(&rtcHandle, PERSISTENT_OBJECT_RESET_REASON_FWONLY, value);
     }
 #endif
+
+#ifdef USE_BRAINFPV_BL
+    // BrainFPV bootloader reads RTC_BKP_DR6 (PERSISTENT_OBJECT_BRAINFPV_BL) on
+    // boot to decide whether to stay in DFU mode. Mirror the RESET_REASON
+    // value into that slot so a configurator-driven "reboot to bootloader"
+    // request reaches the bootloader. Same shape as the SPRACING workaround
+    // above; structural origin: BrainFPV/betaflight @ 4.5.1-BRAIN-2.
+    if (id == PERSISTENT_OBJECT_RESET_REASON) {
+        HAL_RTCEx_BKUPWrite(&rtcHandle, PERSISTENT_OBJECT_BRAINFPV_BL, value);
+    }
+#endif
 }
 
 void persistentObjectRTCEnable(void)

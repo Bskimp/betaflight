@@ -51,3 +51,6 @@
 	url = https://github.com/X-CORE-LABS-PTE-LTD/X32M7_Std_SDK.git
 	ignore = dirty
 	update = none
+[submodule "lib/main/brainfpv_fw_packer"]
+	path = lib/main/brainfpv_fw_packer
+	url = https://github.com/BrainFPV/brainfpv_fw_packer.git

@@ -241,11 +241,20 @@ MCU_FLASH_SIZE := $(DEFAULT_TARGET_FLASH)
 endif
 
 ifeq ($(EXST),yes)
+ifeq ($(BRAINFPV_BL),yes)
+# BrainFPV bootloader / XIP-from-QSPI: firmware lives at 0x90400000 and runs
+# in-place. 4 MB region available between the bootloader's settings region
+# and the user storage / blackbox region.
+FIRMWARE_SIZE       := 4096
+MCU_FLASH_SIZE      := FIRMWARE_SIZE
+DEFAULT_LD_SCRIPT   = $(LINKER_DIR)/stm32_h750_brainfpv_xip.ld
+else
 FIRMWARE_SIZE      := 448
 # TARGET_FLASH now becomes the amount of RAM memory that is occupied by the firmware
 # and the maximum size of the data stored on the external storage device.
 MCU_FLASH_SIZE     := FIRMWARE_SIZE
 DEFAULT_LD_SCRIPT   = $(LINKER_DIR)/stm32_ram_h750_exst.ld
+endif
 endif
 
 ifeq ($(EXST),yes)

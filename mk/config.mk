@@ -61,6 +61,16 @@ ifneq ($(strip $(EXST_ADJUST_VMA)),)
 EXST = yes
 endif
 
+# BrainFPV bootloader detection — builds for boards that ship with the
+# BrainFPV in-place QSPI bootloader (e.g. RADIX 2 HD) advertise themselves
+# via MANUFACTURER_ID = BRFP. Triggers an XIP-from-QSPI link path with no
+# RAM-copy and no SPRACING-style trailing MD5 hash; firmware-image
+# validation is handled by the .bl_header_section magic instead.
+MANUFACTURER_ID := $(call pp_def_value,$(CONFIG_HEADER_FILE),MANUFACTURER_ID)
+ifeq ($(strip $(MANUFACTURER_ID)),BRFP)
+BRAINFPV_BL = yes
+endif
+
 else #exists
 $(error `$(CONFIG_HEADER_FILE)` not found. Have you hydrated configuration using: 'make configs'?)
 endif #CONFIG_HEADER_FILE exists
