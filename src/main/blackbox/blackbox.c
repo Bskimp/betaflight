@@ -73,6 +73,9 @@
 #include "flight/rpm_filter.h"
 #include "flight/servos.h"
 #include "flight/imu.h"
+#ifdef USE_WING
+#include "flight/wing_tune.h"
+#endif
 
 #include "io/beeper.h"
 #include "io/gps.h"
@@ -216,6 +219,37 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
     {"axisS",       0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(NONZERO_WING_S_0)},
     {"axisS",       1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(NONZERO_WING_S_1)},
     {"axisS",       2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(NONZERO_WING_S_2)},
+
+    // Wing tuning always-on debug groups (DEBUG_SPA / WING_SETPOINT / S_TERM / TPA / WING_LAUNCH)
+    {"wingSpa",          0, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SPA)},
+    {"wingSpa",          1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SPA)},
+    {"wingSpa",          2, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SPA)},
+    {"wingSetpointRaw",  0, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SETPOINT)},
+    {"wingSetpointRaw",  1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SETPOINT)},
+    {"wingSetpointRaw",  2, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SETPOINT)},
+    {"wingSetpointAdj",  0, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SETPOINT)},
+    {"wingSetpointAdj",  1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SETPOINT)},
+    {"wingSetpointAdj",  2, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_SETPOINT)},
+    {"wingSTermRaw",     0, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_STERM)},
+    {"wingSTermRaw",     1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_STERM)},
+    {"wingSTermRaw",     2, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_STERM)},
+    {"wingSTermPost",    0, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_STERM)},
+    {"wingSTermPost",    1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_STERM)},
+    {"wingSTermPost",    2, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_STERM)},
+    {"wingTpaFactor",   -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_TPA)},
+    {"wingTpaRoll",     -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_TPA)},
+    {"wingTpaPitch",    -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_TPA)},
+    {"wingTpaThrottle", -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_TPA)},
+    {"wingTpaAirspeed", -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_TPA)},
+    {"wingTpaArg",      -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_TPA)},
+    {"wingLaunchState",    -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchElapsed",  -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchThrottle", -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchAccel",    -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchPitch",    -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchRoll",     -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchRamp",     -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
+    {"wingLaunchClimbRem", -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(WING_TUNE_LAUNCH)},
 #endif
     /* rcCommands are encoded together as a group in P-frames: */
     {"rcCommand",   0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(RC_COMMANDS)},
@@ -385,6 +419,15 @@ typedef struct blackboxMainState_s {
     int16_t imuAttitudeQuaternion3[XYZ_AXIS_COUNT]; // only x,y,z is stored; w is always positive
 #endif
     int16_t debug[DEBUG16_VALUE_COUNT];
+#ifdef USE_WING
+    int32_t wingSpa[XYZ_AXIS_COUNT];
+    int32_t wingSetpointRaw[XYZ_AXIS_COUNT];
+    int32_t wingSetpointAdj[XYZ_AXIS_COUNT];
+    int32_t wingSTermRaw[XYZ_AXIS_COUNT];
+    int32_t wingSTermPost[XYZ_AXIS_COUNT];
+    int32_t wingTpa[6];
+    int32_t wingLaunch[8];
+#endif
     int16_t motor[MAX_SUPPORTED_MOTORS];
     int16_t servo[MAX_SUPPORTED_SERVOS];
 #ifdef USE_DSHOT_TELEMETRY
@@ -546,6 +589,17 @@ static bool testBlackboxConditionUncached(flightLogFieldCondition_e condition)
     case CONDITION(NONZERO_WING_S_1):
     case CONDITION(NONZERO_WING_S_2):
         return (currentPidProfile->pid[condition - CONDITION(NONZERO_WING_S_0)].S != 0) && isFieldEnabled(FIELD_SELECT(PID));
+
+    case CONDITION(WING_TUNE_SPA):
+        return isFieldEnabled(FIELD_SELECT(WING_TUNE_SPA));
+    case CONDITION(WING_TUNE_SETPOINT):
+        return isFieldEnabled(FIELD_SELECT(WING_TUNE_SETPOINT));
+    case CONDITION(WING_TUNE_STERM):
+        return isFieldEnabled(FIELD_SELECT(WING_TUNE_STERM));
+    case CONDITION(WING_TUNE_TPA):
+        return isFieldEnabled(FIELD_SELECT(WING_TUNE_TPA));
+    case CONDITION(WING_TUNE_LAUNCH):
+        return isFieldEnabled(FIELD_SELECT(WING_TUNE_LAUNCH));
 #endif
 
     case CONDITION(RC_COMMANDS):
@@ -809,6 +863,26 @@ static void writeIntraframe(void)
     }
 #endif
 
+#ifdef USE_WING
+    if (testBlackboxCondition(CONDITION(WING_TUNE_SPA))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSpa, XYZ_AXIS_COUNT);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_SETPOINT))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSetpointRaw, XYZ_AXIS_COUNT);
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSetpointAdj, XYZ_AXIS_COUNT);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_STERM))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSTermRaw, XYZ_AXIS_COUNT);
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSTermPost, XYZ_AXIS_COUNT);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_TPA))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingTpa, 6);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_LAUNCH))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingLaunch, 8);
+    }
+#endif
+
     //Rotate our history buffers:
 
     //The current state becomes the new "before" state
@@ -984,6 +1058,36 @@ static void writeInterframe(void)
             if (testBlackboxCondition(CONDITION(MOTOR_1_HAS_RPM) + x)) {
                 blackboxWriteSignedVB(blackboxCurrent->erpm[x] - blackboxLast->erpm[x]);
             }
+        }
+    }
+#endif
+
+#ifdef USE_WING
+    {
+        int32_t wtDeltas[8];
+        if (testBlackboxCondition(CONDITION(WING_TUNE_SPA))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSpa, blackboxLast->wingSpa, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_SETPOINT))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSetpointRaw, blackboxLast->wingSetpointRaw, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSetpointAdj, blackboxLast->wingSetpointAdj, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_STERM))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSTermRaw, blackboxLast->wingSTermRaw, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSTermPost, blackboxLast->wingSTermPost, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_TPA))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingTpa, blackboxLast->wingTpa, 6);
+            blackboxWriteSignedVBArray(wtDeltas, 6);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_LAUNCH))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingLaunch, blackboxLast->wingLaunch, 8);
+            blackboxWriteSignedVBArray(wtDeltas, 8);
         }
     }
 #endif
@@ -1319,6 +1423,16 @@ static void loadMainState(timeUs_t currentTimeUs)
     for (int i = 0; i < DEBUG16_VALUE_COUNT; i++) {
         blackboxCurrent->debug[i] = debug[i];
     }
+
+#ifdef USE_WING
+    memcpy(blackboxCurrent->wingSpa,         wingTuneData.spa,         sizeof(blackboxCurrent->wingSpa));
+    memcpy(blackboxCurrent->wingSetpointRaw, wingTuneData.setpointRaw, sizeof(blackboxCurrent->wingSetpointRaw));
+    memcpy(blackboxCurrent->wingSetpointAdj, wingTuneData.setpointAdj, sizeof(blackboxCurrent->wingSetpointAdj));
+    memcpy(blackboxCurrent->wingSTermRaw,    wingTuneData.sTermRaw,    sizeof(blackboxCurrent->wingSTermRaw));
+    memcpy(blackboxCurrent->wingSTermPost,   wingTuneData.sTermPost,   sizeof(blackboxCurrent->wingSTermPost));
+    memcpy(blackboxCurrent->wingTpa,         wingTuneData.tpa,         sizeof(blackboxCurrent->wingTpa));
+    memcpy(blackboxCurrent->wingLaunch,      wingTuneData.launch,      sizeof(blackboxCurrent->wingLaunch));
+#endif
 
     const int motorCount = getMotorCount();
     for (int i = 0; i < motorCount; i++) {

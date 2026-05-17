@@ -571,6 +571,7 @@ pwl_unittest_SRC := \
 
 wing_launch_unittest_SRC := \
 		$(USER_DIR)/flight/wing_launch.c \
+		$(USER_DIR)/flight/wing_tune.c \
 		$(USER_DIR)/common/maths.c
 
 wing_launch_unittest_DEFINES := \
