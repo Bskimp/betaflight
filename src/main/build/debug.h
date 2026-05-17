@@ -22,11 +22,23 @@
 
 #include <stdint.h>
 
+#include "platform.h"
+
 #define DEBUG16_VALUE_COUNT 8
 extern int16_t debug[DEBUG16_VALUE_COUNT];
 extern uint8_t debugMode;
 
+#ifdef USE_WING
+// Always-on capture for wing-tuning blackbox (see flight/wing_tune.h).
+// Hot path: most call sites pass a non-wing mode and fall through immediately.
+void wingTuneCapture(uint8_t mode, uint8_t index, int32_t value);
+#define DEBUG_SET(mode, index, value) do { \
+    if (debugMode == (mode)) { debug[(index)] = (value); } \
+    wingTuneCapture((uint8_t)(mode), (uint8_t)(index), (int32_t)(value)); \
+} while (0)
+#else
 #define DEBUG_SET(mode, index, value) do { if (debugMode == (mode)) { debug[(index)] = (value); } } while (0)
+#endif
 
 typedef enum {
     DEBUG_NONE,
