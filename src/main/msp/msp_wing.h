@@ -34,4 +34,18 @@ void serializeWingTuning(sbuf_t *dst, const pidProfile_t *profile);
 // write EEPROM -- caller handles persistence via MSP_EEPROM_WRITE.
 bool deserializeWingTuning(sbuf_t *src, pidProfile_t *profile);
 
+// MSP2_GET_WING_CAPABILITIES: return a u16 bitfield indicating which
+// wing-fork-specific features this firmware build supports. The
+// configurator uses this to gate sub-tabs and yaw_type options that
+// would no-op on mainline (post-betaflight#13719) builds, which have
+// USE_WING + MSP2_WING_TUNING only.
+//
+// Bit layout (append-only — older configurators ignore unknown high bits):
+//   bit 0: WING_TUNING       — MSP2_WING_TUNING fields (s_*, SPA, TPA)
+//   bit 1: WING_LAUNCH       — MSP2_WING_LAUNCH (auto-launch)
+//   bit 2: WING_GPS_RESCUE   — MSP2_WING_GPS_RESCUE
+//   bit 3: WING_AUTOLAND     — MSP2_WING_AUTOLAND
+//   bit 4: COMBINED_YAW      — yaw_type=COMBINED enum support
+uint16_t getWingCapabilitiesBitfield(void);
+
 #endif // USE_WING

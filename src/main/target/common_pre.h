@@ -551,6 +551,17 @@
 
 #define USE_WING_LAUNCH
 
+// Wing-fork-only capability markers. Set together with USE_WING_LAUNCH
+// so the wing-fork advertises full feature support via
+// MSP2_GET_WING_CAPABILITIES. Mainline (post-betaflight#13719) has
+// USE_WING + MSP2_WING_TUNING but lacks these MSPs and the COMBINED
+// yaw enum — its build leaves these defines unset, capabilities
+// bitfield reflects bit 0 only, configurator hides the four wing-
+// specific tabs/options.
+#define USE_WING_GPS_RESCUE
+#define USE_WING_AUTOLAND
+#define USE_WING_COMBINED_YAW
+
 #endif // USE_WING
 
 #if defined(USE_POSITION_HOLD) && !(defined(USE_GPS) || defined(USE_OPTICALFLOW))

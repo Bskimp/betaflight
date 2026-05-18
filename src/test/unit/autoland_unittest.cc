@@ -22,12 +22,20 @@
 extern "C" {
     #include "platform.h"
     #include "common/maths.h"
+    #include "build/debug.h"
     #include "flight/autoland.h"
     #include "flight/nav_wind.h"
 }
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
+
+// Mocks for BF globals referenced via DEBUG_SET() inside autoland.c.
+// Matches the pattern used by wing_launch_unittest.cc.
+extern "C" {
+    uint8_t debugMode = 0;
+    int16_t debug[DEBUG16_VALUE_COUNT] = {0};
+}
 
 static constexpr timeUs_t MS = 1000;
 static constexpr timeUs_t S  = 1000 * MS;
@@ -57,6 +65,7 @@ static autolandSequenceConfig_t makeDefaultCfg()
     cfg.touchdown_alt_threshold_cm = 30;
     cfg.touchdown_accel_threshold  = 30;   // 3.0 g
     cfg.touchdown_quiescence_ms    = 2000;
+    cfg.stick_cancel_threshold     = 35;   // mirrors wing_launch default
     return cfg;
 }
 
@@ -443,8 +452,13 @@ TEST_F(AutolandTest, CommitLatchesBelowCommitAltitude)
     EXPECT_TRUE(autolandIsCommitLatched());
 }
 
-TEST_F(AutolandTest, ExternalAbortRefusedOnceCommitLatched)
+TEST_F(AutolandTest, ExternalAbortAlwaysSucceedsAfterCommitLatch)
 {
+    // POST-FIRST-FLIGHT-TEST REDESIGN: the original "below commit_alt
+    // pilot aborts are refused" rule killed pilot intervention during
+    // a near-treetop drift. Pilot is now always trusted -- the latch
+    // FLAG still gets set (telemetry / OSD / blackbox can see it) but
+    // it no longer blocks autolandAbort().
     enterStraightIn(1 * S);
     auto high = sampleAtHome(2000.0f);
     autolandUpdate(1 * S + 600 * MS, &high);
@@ -454,13 +468,19 @@ TEST_F(AutolandTest, ExternalAbortRefusedOnceCommitLatched)
     autolandUpdate(2 * S, &low);
     ASSERT_TRUE(autolandIsCommitLatched());
 
-    // Pilot abort is refused -- state machine keeps flying to flare.
-    EXPECT_FALSE(autolandAbort(AL_ABORT_PILOT, 3 * S));
-    EXPECT_NE(autolandGetPhase(), AL_ABORT);
+    // Pilot abort succeeds even though commit-latched (the bug fix).
+    EXPECT_TRUE(autolandAbort(AL_ABORT_PILOT, 3 * S));
+    EXPECT_EQ(autolandGetPhase(), AL_ABORT);
+    EXPECT_EQ(autolandGetLastAbortCause(), AL_ABORT_PILOT);
 }
 
-TEST_F(AutolandTest, InternalAbortBypassesCommitLatch)
+TEST_F(AutolandTest, InternalSensorLossAbortFiresEvenWhenCommitLatched)
 {
+    // Internal safety aborts (GPS loss, baro loss, watchdog) fire via
+    // autolandTransition(AL_ABORT, ...) directly, not via
+    // autolandAbort(). They never gated on the commit latch (invariant
+    // #6). Test verifies that's still true after the disengage redesign:
+    // a sensor-loss abort fires regardless of commit-latch state.
     enterStraightIn(1 * S);
     auto high = sampleAtHome(2000.0f);
     autolandUpdate(1 * S + 600 * MS, &high);
@@ -468,8 +488,6 @@ TEST_F(AutolandTest, InternalAbortBypassesCommitLatch)
     autolandUpdate(2 * S, &low);
     ASSERT_TRUE(autolandIsCommitLatched());
 
-    // GPS loss is an internal/safety abort -- must bypass the latch
-    // (invariant #6: degraded modes never silently continue).
     auto noGps = low;
     noGps.gpsValid = false;
     autolandUpdate(3 * S, &noGps);

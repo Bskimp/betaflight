@@ -739,13 +739,15 @@ bool autolandRequestEntry(timeUs_t currentTimeUs,
 
 bool autolandAbort(autolandAbortCause_e cause, timeUs_t currentTimeUs)
 {
-    // Invariant #5: while commit is latched, external aborts are
-    // refused. Internal safety aborts (watchdog, GPS/baro loss) should
-    // call autolandTransition(AL_ABORT, ...) directly and set lastAbort
-    // inline -- those bypass this commit-latch check deliberately.
-    if (state.commitLatched) {
-        return false;
-    }
+    // Invariant #5 was REVISED post first-flight-test: pilot is always
+    // trusted. The original "below commit_alt, refuse external aborts"
+    // rule killed pilot intervention during a near-treetop drift on the
+    // first manual flight test. The commitLatched flag is still set when
+    // AGL crosses commit_altitude_cm (telemetry / OSD / blackbox can
+    // see it) but no code consumes it for blocking. Internal safety
+    // aborts (watchdog, GPS/baro loss) still use autolandTransition(
+    // AL_ABORT, ...) directly to set the cause precisely.
+    //
     // Already aborting / done -- nothing to do, but don't return false
     // (caller might retry indefinitely and lose context).
     if (state.phase == AL_ABORT || state.phase == AL_COMPLETE) {

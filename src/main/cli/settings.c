@@ -1201,6 +1201,7 @@ const clivalue_t valueTable[] = {
     { PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_ALT,        VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 300 },    PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, touchdown_alt_threshold_cm) },
     { PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_QUIESCENCE, VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 500, 10000 },PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, touchdown_quiescence_ms) },
     { PARAM_NAME_WING_AUTOLAND_MIN_SATS,             VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 5, 50 },     PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, min_pattern_sats) },
+    { PARAM_NAME_WING_AUTOLAND_STICK_CANCEL_THRESHOLD, VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 100 },    PG_WING_AUTOLAND_CONFIG, offsetof(wingAutolandConfig_t, stick_cancel_threshold) },
 #endif // USE_WING
 
 #ifdef USE_GPS_LAP_TIMER

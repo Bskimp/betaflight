@@ -58,6 +58,12 @@ PG_RESET_TEMPLATE(wingAutolandConfig_t, wingAutolandConfig,
     .touchdown_alt_threshold_cm = 30,   // 1 ft AGL
     .touchdown_quiescence_ms = 2000,
     .min_pattern_sats = 8,
+
+    // Pilot override -- 35% deflection mirrors wing_launch_stick_override
+    // default. Below this threshold pid.c treats input as a nudge offset
+    // to autoland's setpoints; at/above it the autoland_task layer fires
+    // autolandAbort(AL_ABORT_PILOT) and pilot regains full control.
+    .stick_cancel_threshold = 35,
 );
 
 #endif // USE_WING

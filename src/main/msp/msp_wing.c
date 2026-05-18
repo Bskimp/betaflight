@@ -115,4 +115,24 @@ bool deserializeWingTuning(sbuf_t *src, pidProfile_t *profile)
     return true;
 }
 
+uint16_t getWingCapabilitiesBitfield(void)
+{
+    uint16_t bits = 0;
+    // Bit 0: WING_TUNING (set whenever USE_WING is on — mainline + fork).
+    bits |= (1u << 0);
+#ifdef USE_WING_LAUNCH
+    bits |= (1u << 1);
+#endif
+#ifdef USE_WING_GPS_RESCUE
+    bits |= (1u << 2);
+#endif
+#ifdef USE_WING_AUTOLAND
+    bits |= (1u << 3);
+#endif
+#ifdef USE_WING_COMBINED_YAW
+    bits |= (1u << 4);
+#endif
+    return bits;
+}
+
 #endif // USE_WING

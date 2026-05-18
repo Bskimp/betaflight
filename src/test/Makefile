@@ -599,6 +599,12 @@ autoland_unittest_SRC := \
 autoland_unittest_DEFINES := \
 		USE_WING=
 
+servo_override_unittest_SRC := \
+		$(USER_DIR)/flight/servo_override.c
+
+servo_override_unittest_DEFINES := \
+		USE_WING=
+
 # Please tweak the following variable definitions as needed by your
 # project, except GTEST_HEADERS, which you can use in your own targets
 # but shouldn't modify.

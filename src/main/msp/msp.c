@@ -90,6 +90,7 @@
 #include "flight/pid_init.h"
 #include "flight/position.h"
 #include "flight/rpm_filter.h"
+#include "flight/servo_override.h"
 #include "flight/servos.h"
 
 #include "io/asyncfatfs/asyncfatfs.h"
@@ -2768,6 +2769,14 @@ static mspResult_e mspFcProcessOutCommandWithArg(mspDescriptor_t srcDesc, int16_
     case MSP2_WING_TUNING:
         serializeWingTuning(dst, currentPidProfile);
         break;
+
+    case MSP2_GET_WING_CAPABILITIES:
+        // Wing-fork capability bitfield. Configurator reads on connect
+        // and uses it to gate Launch / GPS Rescue / Autoland sub-tabs
+        // and the COMBINED yaw_type option, all of which would no-op
+        // on mainline builds with USE_WING + MSP2_WING_TUNING only.
+        sbufWriteU16(dst, getWingCapabilitiesBitfield());
+        break;
 #endif
 
 #ifdef USE_WING_LAUNCH
@@ -4404,6 +4413,21 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         // Autoland params are read at AL_ENTRY / state transitions.
         // Phase 0: state machine not built yet, so no reinit needed.
         break;
+#endif
+
+#ifdef USE_WING
+    case MSP2_SET_SERVO_OVERRIDE: {
+        if (sbufBytesRemaining(src) < 5) {
+            return MSP_RESULT_ERROR;
+        }
+        const uint8_t servoIdx = sbufReadU8(src);
+        const uint16_t pwm = sbufReadU16(src);
+        const uint16_t durationMs = sbufReadU16(src);
+        if (!servoOverrideRequest(servoIdx, pwm, durationMs)) {
+            return MSP_RESULT_ERROR;
+        }
+        break;
+    }
 #endif
 
     default:

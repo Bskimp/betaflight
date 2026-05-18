@@ -101,6 +101,12 @@ typedef struct autolandSequenceConfig_s {
     uint16_t touchdown_alt_threshold_cm;   // AL_FLARE -> AL_TOUCHDOWN trigger
     uint8_t  touchdown_accel_threshold;    // 0.1g units; 30 = 3.0g impact
     uint16_t touchdown_quiescence_ms;      // disarm delay in AL_TOUCHDOWN
+
+    // Pilot override (post-flight-test redesign):
+    uint8_t  stick_cancel_threshold;       // % deflection -> abort autoland.
+                                           // Below this, input is a nudge.
+                                           // 0 = disabled (pid.c nudges still
+                                           // apply but no stick-cancel fires).
 } autolandSequenceConfig_t;
 
 // Entry mode picks which flight-phase path we take from AL_ENTRY.

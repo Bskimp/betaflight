@@ -49,6 +49,9 @@ void serializeWingAutoland(sbuf_t *dst, const wingAutolandConfig_t *cfg)
     sbufWriteU16(dst, cfg->touchdown_alt_threshold_cm);
     sbufWriteU16(dst, cfg->touchdown_quiescence_ms);
     sbufWriteU8(dst,  cfg->min_pattern_sats);
+    // V2 append-only field: stick-cancel threshold (post first-flight
+    // disengage redesign).
+    sbufWriteU8(dst,  cfg->stick_cancel_threshold);
 }
 
 bool deserializeWingAutoland(sbuf_t *src, wingAutolandConfig_t *cfg)
@@ -77,6 +80,12 @@ bool deserializeWingAutoland(sbuf_t *src, wingAutolandConfig_t *cfg)
     cfg->touchdown_alt_threshold_cm = sbufReadU16(src);
     cfg->touchdown_quiescence_ms    = sbufReadU16(src);
     cfg->min_pattern_sats           = sbufReadU8(src);
+    // V2 append-only: read stick_cancel_threshold if the trailing byte
+    // is present. Older V1 configurators stop at byte 31; we leave the
+    // existing field untouched in that case.
+    if (sbufBytesRemaining(src) >= 1) {
+        cfg->stick_cancel_threshold = sbufReadU8(src);
+    }
     return true;
 }
 

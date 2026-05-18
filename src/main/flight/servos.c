@@ -48,6 +48,10 @@
 #include "flight/pid.h"
 #include "flight/servos.h"
 
+#ifdef USE_WING
+#include "flight/servo_override.h"
+#endif
+
 #include "io/gimbal.h"
 
 #include "pg/pg.h"
@@ -349,7 +353,15 @@ STATIC_ASSERT(sizeof(servoWritten) * 8 >= MAX_SUPPORTED_SERVOS, servoWritten_is_
 
 static void writeServoWithTracking(uint8_t index, servoIndex_e servoname)
 {
+#ifdef USE_WING
+    if (servoOverrideIsActive(servoname)) {
+        servoWrite(index, servoOverrideGetPwm());
+    } else {
+        servoWrite(index, servo[servoname]);
+    }
+#else
     servoWrite(index, servo[servoname]);
+#endif
     servoWritten |= (1 << servoname);
 }
 
@@ -368,6 +380,7 @@ void writeServos(void)
 
 #if defined(USE_WING)
     servoAutoTrimUpdate();
+    servoOverrideUpdate();
 #endif
 
     filterServos();
@@ -434,7 +447,15 @@ void writeServos(void)
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
         const uint8_t channelToForwardFrom = servoParams(i)->forwardFromChannel;
         if ((channelToForwardFrom != CHANNEL_FORWARDING_DISABLED) && !(servoWritten & (1 << i))) {
+#ifdef USE_WING
+            if (servoOverrideIsActive(i)) {
+                servoWrite(servoIndex++, servoOverrideGetPwm());
+            } else {
+                servoWrite(servoIndex++, servo[i]);
+            }
+#else
             servoWrite(servoIndex++, servo[i]);
+#endif
         }
     }
 

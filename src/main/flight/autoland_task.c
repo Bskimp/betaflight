@@ -24,6 +24,7 @@
 #include "common/maths.h"
 
 #include "fc/core.h"
+#include "fc/rc_controls.h"
 #include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
@@ -134,6 +135,7 @@ static void snapshotSequenceConfig(autolandSequenceConfig_t *out)
     out->touchdown_alt_threshold_cm = ac->touchdown_alt_threshold_cm;
     out->touchdown_accel_threshold = ac->touchdown_accel_threshold;
     out->touchdown_quiescence_ms   = ac->touchdown_quiescence_ms;
+    out->stick_cancel_threshold    = ac->stick_cancel_threshold;
 
 #ifdef USE_GPS_RESCUE
     // Reuse rescue tuning so pilots don't have a parallel tuning surface.
@@ -202,9 +204,32 @@ void autolandTaskTick(timeUs_t currentTimeUs)
                              homeLatDeg, homeLonDeg,
                              AL_ENTRY_STRAIGHT_IN, &cfg);
     } else if (fallingEdge && autolandIsActive()) {
-        // Pilot flipped the switch off -- request abort. Refused if
-        // commit-latched (invariant #5). autolandAbort() handles that.
+        // Pilot flipped the switch off -- always honored. (Pre-flight-
+        // test the commit latch could refuse this; that rule was
+        // removed after a near-miss where the pilot couldn't disengage
+        // below 20ft.)
         autolandAbort(AL_ABORT_PILOT, currentTimeUs);
+    }
+
+    // ---- Stick override (cancel) ----
+    //
+    // Mirrors wing_launch_stick_override: any of pitch/roll/yaw past
+    // the configured % deflection fires an immediate abort. Pilot can
+    // always wag out, regardless of altitude or phase. Below this
+    // threshold, pid.c treats the stick input as a trajectory nudge
+    // (see pid.c autoland override block).
+    if (autolandIsActive()) {
+        const uint8_t pct = ac->stick_cancel_threshold;
+        if (pct > 0) {
+            // 0-100 percent -> 0-500 rcCommand units, matching
+            // wing_launch.c:89's wing_launch_stick_override scaling.
+            const float threshold = (float)pct * 5.0f;
+            if (fabsf(rcCommand[ROLL])  > threshold
+             || fabsf(rcCommand[PITCH]) > threshold
+             || fabsf(rcCommand[YAW])   > threshold) {
+                autolandAbort(AL_ABORT_PILOT, currentTimeUs);
+            }
+        }
     }
 
     // ---- Disarm on landing ----

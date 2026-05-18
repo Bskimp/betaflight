@@ -45,6 +45,8 @@
 #define MSP2_WING_AUTOLAND                  0x3018
 #define MSP2_SET_WING_AUTOLAND              0x3019
 #define MSP2_WING_AUTOLAND_STATE            0x301A
+#define MSP2_SET_SERVO_OVERRIDE             0x301B
+#define MSP2_GET_WING_CAPABILITIES          0x301C
 
 // MSP2_SET_TEXT and MSP2_GET_TEXT variable types
 #define MSP2TEXT_PILOT_NAME                      1

@@ -56,6 +56,12 @@ typedef struct wingAutolandConfig_s {
     uint16_t touchdown_alt_threshold_cm;    // baro AGL below = touchdown candidate
     uint16_t touchdown_quiescence_ms;       // ms of no motion to auto-disarm
     uint8_t  min_pattern_sats;              // min GPS sats during pattern
+
+    // Pilot override
+    uint8_t  stick_cancel_threshold;        // % stick deflection -> cancel autoland
+                                            // (0 = disabled). Below this threshold,
+                                            // small inputs become trajectory nudges.
+                                            // Mirrors wing_launch_stick_override.
 } wingAutolandConfig_t;
 
 PG_DECLARE(wingAutolandConfig_t, wingAutolandConfig);

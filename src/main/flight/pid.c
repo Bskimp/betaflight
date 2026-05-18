@@ -659,23 +659,32 @@ STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_
 #endif // USE_WING_LAUNCH
 
 #ifdef USE_WING
-    // Autoland pitch/roll override. Active from AL_ENTRY through
-    // AL_TOUCHDOWN -- pitch holds glide_pitch_deg (flare_pitch_deg
-    // during AL_FLARE), roll is 0 (wings level; Phase 5 will drive
-    // pattern turns). Mirrors the wing-launch gate structure so the
-    // two features coexist cleanly (they can't both be in-progress
-    // at the same time, but the check order doesn't matter).
+    // Autoland pitch/roll override + pilot nudges. Active from
+    // AL_ENTRY through AL_TOUCHDOWN. The autoland_task layer cancels
+    // autoland once stick deflection crosses
+    // wing_autoland_stick_cancel_threshold (default 35%), so we only
+    // see "live" autoland in the 0-34% deflection range -- below
+    // cancel. Within that window the pilot's stick adds a scaled
+    // offset to the autoland setpoint, letting them tune the approach
+    // (more/less pitch, drift left/right) without disengaging.
+    //
+    // Nudge scales chosen so 35% deflection (cancel boundary) gives
+    // a meaningful but bounded offset:
+    //   pitch: 0.02 -> max nudge ~3.5 deg before cancel fires
+    //   roll:  0.05 -> max nudge ~8.75 deg before cancel fires
     if (autolandIsActive()) {
         angleFeedforward = 0.0f;
         if (axis == FD_PITCH) {
             float autolandPitchDeg;
             if (autolandGetPitchSetpoint(&autolandPitchDeg)) {
-                angleTarget = -autolandPitchDeg;
+                const float pitchNudgeDeg = rcCommand[FD_PITCH] * 0.02f;
+                angleTarget = -(autolandPitchDeg + pitchNudgeDeg);
             }
         } else {
             float autolandRollDeg;
             if (autolandGetRollSetpoint(&autolandRollDeg)) {
-                angleTarget = autolandRollDeg;
+                const float rollNudgeDeg = rcCommand[FD_ROLL] * 0.05f;
+                angleTarget = autolandRollDeg + rollNudgeDeg;
             }
         }
         angleLimit = 85.0f;

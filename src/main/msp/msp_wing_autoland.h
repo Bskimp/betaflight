@@ -25,8 +25,12 @@
 
 #ifdef USE_WING
 
-// MSP2_WING_AUTOLAND: serialize all 22 wing autoland config fields.
-// Wire format: 31 bytes, little-endian, all unsigned.
+// MSP2_WING_AUTOLAND: serialize all 23 wing autoland config fields.
+// Wire format: 32 bytes (V2; V1 was 31 bytes pre stick-cancel), little-
+// endian, all unsigned. Append-only -- a V1 configurator gets the full
+// 32 bytes and ignores the trailing stick_cancel_threshold byte; a V2
+// configurator talking to a V1 firmware reads 31 bytes and the
+// deserializer leaves stick_cancel_threshold at its existing value.
 //
 // Byte layout:
 //   [0]      uint8   enabled
@@ -50,10 +54,13 @@
 //   [26..27] uint16  touchdown_alt_threshold_cm
 //   [28..29] uint16  touchdown_quiescence_ms
 //   [30]     uint8   min_pattern_sats
+//   [31]     uint8   stick_cancel_threshold     (V2 append)
 void serializeWingAutoland(sbuf_t *dst, const wingAutolandConfig_t *cfg);
 
-// MSP2_SET_WING_AUTOLAND: deserialize into cfg. Returns true on success,
-// false if the payload is shorter than 31 bytes (cfg left untouched).
+// MSP2_SET_WING_AUTOLAND: deserialize into cfg. Returns true if the
+// V1 payload (>= 31 bytes) is present; the V2 trailing byte is read
+// when available and otherwise left at the existing field value
+// (so an older configurator can still write the V1 31-byte payload).
 // Does NOT write EEPROM; caller handles persistence via MSP_EEPROM_WRITE.
 bool deserializeWingAutoland(sbuf_t *src, wingAutolandConfig_t *cfg);
 

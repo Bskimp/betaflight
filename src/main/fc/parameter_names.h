@@ -346,6 +346,7 @@
 #define PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_ALT "wing_autoland_touchdown_alt"
 #define PARAM_NAME_WING_AUTOLAND_TOUCHDOWN_QUIESCENCE "wing_autoland_touchdown_quiescence"
 #define PARAM_NAME_WING_AUTOLAND_MIN_SATS "wing_autoland_min_sats"
+#define PARAM_NAME_WING_AUTOLAND_STICK_CANCEL_THRESHOLD "wing_autoland_stick_cancel_threshold"
 #endif // USE_WING
 
 #ifdef USE_GPS_LAP_TIMER
