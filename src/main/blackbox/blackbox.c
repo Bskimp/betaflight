@@ -39,6 +39,7 @@
 #include "common/axis.h"
 #include "common/encoding.h"
 #include "common/maths.h"
+#include "common/printf.h"
 #include "common/time.h"
 #include "common/utils.h"
 
@@ -1778,6 +1779,42 @@ static bool blackboxWriteSysinfo(void)
 
         BLACKBOX_PRINT_HEADER_LINE("fields_disabled_mask", "%d",            blackboxConfig()->fields_disabled_mask);
         BLACKBOX_PRINT_HEADER_LINE("blackbox_high_resolution", "%d",        blackboxConfig()->high_resolution);
+
+        // Mixer state - lets log viewers attribute servo[N] columns to roles
+        // (LeftElevon, Rudder, etc.) instead of opaque positional indices.
+        // mixerMode gives base airframe; servoParam<i> carries per-servo
+        // direction (reversedSources bitmask) + output range; smix<i> carries
+        // the per-rule input source + sign + weight.
+        BLACKBOX_PRINT_HEADER_LINE("mixerMode", "%d",                       (int)getMixerMode());
+#ifdef USE_SERVOS
+        BLACKBOX_PRINT_HEADER_LINE("servoCount", "%d",                      MAX_SUPPORTED_SERVOS);
+        // Per-servo params: rate,min,max,middle,reversedSources
+        BLACKBOX_PRINT_HEADER_LINE_CUSTOM(
+            char paramName[16];
+            for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+                const servoParam_t *p = servoParams(i);
+                tfp_sprintf(paramName, "servoParam%d", i);
+                blackboxPrintfHeaderLine(paramName, "%d,%d,%d,%d,%x",
+                    p->rate, p->min, p->max, p->middle,
+                    (unsigned int)p->reversedSources);
+            }
+        );
+        // One line per active smix rule (terminator: first rate==0).
+        // Fields: target,input,rate,speed,min,max,box
+        BLACKBOX_PRINT_HEADER_LINE_CUSTOM(
+            char ruleName[16];
+            for (int i = 0; i < MAX_SERVO_RULES; i++) {
+                const servoMixer_t *r = customServoMixers(i);
+                if (r->rate == 0) {
+                    break;
+                }
+                tfp_sprintf(ruleName, "smix%d", i);
+                blackboxPrintfHeaderLine(ruleName, "%d,%d,%d,%d,%d,%d,%d",
+                    r->targetChannel, r->inputSource, r->rate, r->speed,
+                    r->min, r->max, r->box);
+            }
+        );
+#endif
 
 #ifdef USE_BATTERY_VOLTAGE_SAG_COMPENSATION
         BLACKBOX_PRINT_HEADER_LINE(PARAM_NAME_VBAT_SAG_COMPENSATION, "%d",   currentPidProfile->vbat_sag_compensation);
