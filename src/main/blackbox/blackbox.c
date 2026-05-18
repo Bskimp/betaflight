@@ -756,6 +756,32 @@ static void writeIntraframe(void)
 #endif
     }
 
+#ifdef USE_WING
+    // Wing-tuning block. Must be written here (between axisS and
+    // rcCommand) to match the `blackboxMainFields[]` header def order.
+    // Previously this block was at the end of the frame, which caused
+    // every I-frame's byte stream to misalign with the parser's
+    // expected field positions — silent data loss (~98% of frames
+    // skipped as "corrupted"). See investigation 2026-05-18.
+    if (testBlackboxCondition(CONDITION(WING_TUNE_SPA))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSpa, XYZ_AXIS_COUNT);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_SETPOINT))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSetpointRaw, XYZ_AXIS_COUNT);
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSetpointAdj, XYZ_AXIS_COUNT);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_STERM))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSTermRaw, XYZ_AXIS_COUNT);
+        blackboxWriteSignedVBArray(blackboxCurrent->wingSTermPost, XYZ_AXIS_COUNT);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_TPA))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingTpa, 6);
+    }
+    if (testBlackboxCondition(CONDITION(WING_TUNE_LAUNCH))) {
+        blackboxWriteSignedVBArray(blackboxCurrent->wingLaunch, 8);
+    }
+#endif
+
     if (testBlackboxCondition(CONDITION(RC_COMMANDS))) {
         // Write roll, pitch and yaw first:
         blackboxWriteSigned16VBArray(blackboxCurrent->rcCommand, 3);
@@ -864,26 +890,6 @@ static void writeIntraframe(void)
     }
 #endif
 
-#ifdef USE_WING
-    if (testBlackboxCondition(CONDITION(WING_TUNE_SPA))) {
-        blackboxWriteSignedVBArray(blackboxCurrent->wingSpa, XYZ_AXIS_COUNT);
-    }
-    if (testBlackboxCondition(CONDITION(WING_TUNE_SETPOINT))) {
-        blackboxWriteSignedVBArray(blackboxCurrent->wingSetpointRaw, XYZ_AXIS_COUNT);
-        blackboxWriteSignedVBArray(blackboxCurrent->wingSetpointAdj, XYZ_AXIS_COUNT);
-    }
-    if (testBlackboxCondition(CONDITION(WING_TUNE_STERM))) {
-        blackboxWriteSignedVBArray(blackboxCurrent->wingSTermRaw, XYZ_AXIS_COUNT);
-        blackboxWriteSignedVBArray(blackboxCurrent->wingSTermPost, XYZ_AXIS_COUNT);
-    }
-    if (testBlackboxCondition(CONDITION(WING_TUNE_TPA))) {
-        blackboxWriteSignedVBArray(blackboxCurrent->wingTpa, 6);
-    }
-    if (testBlackboxCondition(CONDITION(WING_TUNE_LAUNCH))) {
-        blackboxWriteSignedVBArray(blackboxCurrent->wingLaunch, 8);
-    }
-#endif
-
     //Rotate our history buffers:
 
     //The current state becomes the new "before" state
@@ -960,6 +966,40 @@ static void writeInterframe(void)
         }
 #endif
     }
+
+#ifdef USE_WING
+    // Wing-tuning P-frame deltas. Must be written here (between axisS
+    // and rcCommand) to match the `blackboxMainFields[]` header def
+    // order. See writeIntraframe() for the full explanation of the
+    // bug this fixes.
+    {
+        int32_t wtDeltas[8];
+        if (testBlackboxCondition(CONDITION(WING_TUNE_SPA))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSpa, blackboxLast->wingSpa, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_SETPOINT))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSetpointRaw, blackboxLast->wingSetpointRaw, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSetpointAdj, blackboxLast->wingSetpointAdj, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_STERM))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSTermRaw, blackboxLast->wingSTermRaw, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+            arraySubInt32(wtDeltas, blackboxCurrent->wingSTermPost, blackboxLast->wingSTermPost, XYZ_AXIS_COUNT);
+            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_TPA))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingTpa, blackboxLast->wingTpa, 6);
+            blackboxWriteSignedVBArray(wtDeltas, 6);
+        }
+        if (testBlackboxCondition(CONDITION(WING_TUNE_LAUNCH))) {
+            arraySubInt32(wtDeltas, blackboxCurrent->wingLaunch, blackboxLast->wingLaunch, 8);
+            blackboxWriteSignedVBArray(wtDeltas, 8);
+        }
+    }
+#endif
 
     /*
      * RC tends to stay the same or fairly small for many frames at a time, so use an encoding that
@@ -1059,36 +1099,6 @@ static void writeInterframe(void)
             if (testBlackboxCondition(CONDITION(MOTOR_1_HAS_RPM) + x)) {
                 blackboxWriteSignedVB(blackboxCurrent->erpm[x] - blackboxLast->erpm[x]);
             }
-        }
-    }
-#endif
-
-#ifdef USE_WING
-    {
-        int32_t wtDeltas[8];
-        if (testBlackboxCondition(CONDITION(WING_TUNE_SPA))) {
-            arraySubInt32(wtDeltas, blackboxCurrent->wingSpa, blackboxLast->wingSpa, XYZ_AXIS_COUNT);
-            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
-        }
-        if (testBlackboxCondition(CONDITION(WING_TUNE_SETPOINT))) {
-            arraySubInt32(wtDeltas, blackboxCurrent->wingSetpointRaw, blackboxLast->wingSetpointRaw, XYZ_AXIS_COUNT);
-            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
-            arraySubInt32(wtDeltas, blackboxCurrent->wingSetpointAdj, blackboxLast->wingSetpointAdj, XYZ_AXIS_COUNT);
-            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
-        }
-        if (testBlackboxCondition(CONDITION(WING_TUNE_STERM))) {
-            arraySubInt32(wtDeltas, blackboxCurrent->wingSTermRaw, blackboxLast->wingSTermRaw, XYZ_AXIS_COUNT);
-            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
-            arraySubInt32(wtDeltas, blackboxCurrent->wingSTermPost, blackboxLast->wingSTermPost, XYZ_AXIS_COUNT);
-            blackboxWriteSignedVBArray(wtDeltas, XYZ_AXIS_COUNT);
-        }
-        if (testBlackboxCondition(CONDITION(WING_TUNE_TPA))) {
-            arraySubInt32(wtDeltas, blackboxCurrent->wingTpa, blackboxLast->wingTpa, 6);
-            blackboxWriteSignedVBArray(wtDeltas, 6);
-        }
-        if (testBlackboxCondition(CONDITION(WING_TUNE_LAUNCH))) {
-            arraySubInt32(wtDeltas, blackboxCurrent->wingLaunch, blackboxLast->wingLaunch, 8);
-            blackboxWriteSignedVBArray(wtDeltas, 8);
         }
     }
 #endif
